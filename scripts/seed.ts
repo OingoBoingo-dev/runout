@@ -82,7 +82,7 @@ const RELEASES: { artist: string; title: string }[] = [
   { artist: 'Wire', title: 'Chairs Missing' },
   { artist: 'Tatsuro Yamashita', title: 'For You' },
   { artist: 'Mariya Takeuchi', title: 'Variety' },
-  { artist: 'Taeko Ohnuki', title: 'Sunshower' },
+  { artist: 'Taeko Onuki', title: 'Sunshower' },
   { artist: 'Casiopea', title: 'Mint Jams' },
   { artist: 'Milton Nascimento', title: 'Clube da Esquina' },
   { artist: 'Caetano Veloso', title: 'Transa' },
@@ -149,13 +149,62 @@ async function main() {
   }
 
   console.log('— catalog via MusicBrainz (throttled ~1.1s/request, ~40s total)');
+  // Anti-hallucination guard: only accept a candidate whose normalized title is
+  // EXACTLY the requested title (dashes/diacritics/spacing folded) and whose
+  // artist credit shares a name token. A wrong record is worse than a miss.
+  const fold = (s: string) =>
+    s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '');
+  const tokens = (s: string) =>
+    s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2);
   const byTitle: Record<string, ReturnType<typeof norm>> = {};
+
+  const pickExact = (cands: MBRG[], title: string, artist: string | null): MBRG | undefined => {
+    const want = fold(title);
+    const wantTokens = artist ? new Set(tokens(artist)) : null;
+    const exact = cands.filter(rg => {
+      if (fold(rg.title ?? '') !== want) return false;
+      if (!wantTokens) return true; // arid-constrained query — artist already guaranteed
+      const credit = (rg['artist-credit'] ?? []).map(c => c.name ?? c.artist?.name ?? '').join(' ');
+      const creditTokens = tokens(credit);
+      // Non-Latin credits (e.g. 山下達郎) yield no Latin tokens to compare.
+      return creditTokens.length === 0 || creditTokens.some(t => wantTokens.has(t));
+    });
+    // Prefer proper albums, then the earliest first release.
+    exact.sort((a, b) => {
+      const albumA = a['primary-type'] === 'Album' ? 0 : 1;
+      const albumB = b['primary-type'] === 'Album' ? 0 : 1;
+      if (albumA !== albumB) return albumA - albumB;
+      return (a['first-release-date'] ?? '9999').localeCompare(b['first-release-date'] ?? '9999');
+    });
+    return exact[0];
+  };
+
   for (const r of RELEASES) {
-    const q = encodeURIComponent(`releasegroup:"${r.title}" AND artist:"${r.artist}"`);
-    const res = await mb<{ 'release-groups'?: MBRG[] }>(`/release-group?query=${q}&fmt=json&limit=1`);
-    const rg = res['release-groups']?.[0];
+    // Pass 1: fielded search on title + artist name.
+    const q1 = encodeURIComponent(`releasegroup:"${r.title}" AND artist:(${r.artist})`);
+    const res1 = await mb<{ 'release-groups'?: MBRG[] }>(`/release-group?query=${q1}&fmt=json&limit=8`);
+    let rg = pickExact(res1['release-groups'] ?? [], r.title, r.artist);
+
+    // Pass 2 (fallback): the artist index misses non-Latin canonical names whose
+    // credits are Latin (山下達郎 credited as "Tatsuro Yamashita"), so resolve the
+    // artist MBID via the alias-aware artist search, then constrain by arid.
     if (!rg) {
-      console.warn(`  MISS: ${r.artist} — ${r.title}`);
+      const aq = encodeURIComponent(`"${r.artist}"`);
+      const ares = await mb<{ artists?: { id: string; score?: number }[] }>(
+        `/artist?query=${aq}&fmt=json&limit=1`,
+      );
+      const arid = ares.artists?.[0]?.id;
+      if (arid) {
+        const q2 = encodeURIComponent(`releasegroup:"${r.title}" AND arid:${arid}`);
+        const res2 = await mb<{ 'release-groups'?: MBRG[] }>(
+          `/release-group?query=${q2}&fmt=json&limit=8`,
+        );
+        rg = pickExact(res2['release-groups'] ?? [], r.title, null);
+      }
+    }
+
+    if (!rg) {
+      console.warn(`  MISS (no exact-title match): ${r.artist} — ${r.title}`);
       continue;
     }
     const item = norm(rg);
