@@ -15,14 +15,14 @@ export function Stars({ value, size = 15 }: { value: number; size?: number }) {
   const label = value ? `${Math.round(value * 10) / 10} out of 5 stars` : 'Not yet rated';
   const five = [0, 1, 2, 3, 4];
   return (
-    <span className="relative inline-flex align-middle text-[#4a4742]" role="img" aria-label={label}>
+    <span className="relative inline-flex align-middle text-ink/15" role="img" aria-label={label}>
       <span className="inline-flex">
         {five.map(i => (
           <Star key={i} size={size} />
         ))}
       </span>
       <span
-        className="absolute left-0 top-0 inline-flex h-full overflow-hidden whitespace-nowrap text-accent"
+        className="absolute left-0 top-0 inline-flex h-full overflow-hidden whitespace-nowrap text-cobalt"
         style={{ width: `${pct}%` }}
       >
         {five.map(i => (

@@ -27,8 +27,8 @@ export function FollowButton({
       }
       className={`rounded-chip px-4 py-2.5 font-mono text-xs uppercase tracking-wider disabled:opacity-50 ${
         following
-          ? 'border border-accent text-accent'
-          : 'bg-accent font-semibold text-press hover:bg-accent/90'
+          ? 'border border-cobalt text-cobalt'
+          : 'bg-cobalt font-semibold text-paper hover:bg-cobalt/90'
       }`}
     >
       {following ? 'Following — click to unfollow' : `Follow @${username}`}

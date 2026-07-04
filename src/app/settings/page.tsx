@@ -19,7 +19,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 py-8">
-      <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Settings</p>
+      <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-cobalt">Settings</p>
       <h1 className="mb-6 font-display text-3xl">Profile</h1>
       <SettingsForm
         username={profile.username}

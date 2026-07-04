@@ -18,7 +18,7 @@ export function PinButton({ itemMbid, pinned }: { itemMbid: string; pinned: bool
         })
       }
       className={`rounded-chip border px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide disabled:opacity-50 ${
-        pinned ? 'border-accent text-accent' : 'border-ink/20 hover:border-ink'
+        pinned ? 'border-cobalt text-cobalt' : 'border-hairline hover:border-ink'
       }`}
     >
       {pinned ? 'Pinned to profile' : 'Pin to profile'}

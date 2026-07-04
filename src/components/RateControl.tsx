@@ -40,13 +40,13 @@ export function RateControl({ itemMbid, initial }: { itemMbid: string; initial: 
                 onClick={() => rate(v)}
                 aria-label={`Rate ${v} star${v === 1 ? '' : 's'}`}
                 title={String(v)}
-                className="rounded-[2px] hover:shadow-[inset_0_-2px_0_var(--color-accent)]"
+                className="rounded-[2px] hover:shadow-[inset_0_-2px_0_var(--color-cobalt)]"
               />
             );
           })}
         </span>
       </span>
-      {error && <span className="font-mono text-xs text-[#F08A63]">{error}</span>}
+      {error && <span className="font-mono text-xs text-red">{error}</span>}
     </span>
   );
 }

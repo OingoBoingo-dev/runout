@@ -13,7 +13,7 @@ export function SignOutButton() {
         router.push('/explore');
         router.refresh();
       }}
-      className="rounded-chip border border-paper/20 px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-muted hover:border-paper hover:text-paper"
+      className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider text-secondary hover:border-ink/40 hover:text-ink"
     >
       Sign out
     </button>

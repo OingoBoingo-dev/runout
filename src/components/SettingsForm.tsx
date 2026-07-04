@@ -20,13 +20,13 @@ export function SettingsForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const label = 'mb-1.5 block font-mono text-[11px] uppercase tracking-[0.13em] text-ink2';
+  const label = 'mb-1.5 block font-mono text-[11px] uppercase tracking-[0.13em] text-secondary';
   const input =
-    'w-full rounded-chip border border-ink/20 bg-white/60 px-4 py-3 text-ink placeholder:text-ink2/60 focus:border-accent focus:outline-none';
+    'w-full rounded-chip border border-hairline bg-ink/5 px-4 py-3 text-ink placeholder:text-secondary/60 focus:border-cobalt focus:outline-none';
 
   return (
     <form
-      className="rounded-card bg-paper p-6 text-ink"
+      className="rounded-card border border-hairline bg-card p-6 text-ink"
       onSubmit={e => {
         e.preventDefault();
         setMsg(null);
@@ -45,7 +45,7 @@ export function SettingsForm({
         <div>
           <span className={label}>Username</span>
           <p className="font-mono text-sm">@{username}</p>
-          <p className="mt-1 font-mono text-[11px] text-ink2">Usernames are permanent in this version.</p>
+          <p className="mt-1 font-mono text-[11px] text-secondary">Usernames are permanent in this version.</p>
         </div>
         <div>
           <label className={label} htmlFor="s-name">Display name</label>
@@ -60,14 +60,14 @@ export function SettingsForm({
             maxLength={280}
             onChange={e => setAbout(e.target.value)}
           />
-          <p className="mt-1 text-right font-mono text-[10px] tabular-nums text-ink2">{about.length}/280</p>
+          <p className="mt-1 text-right font-mono text-[10px] tabular-nums text-secondary">{about.length}/280</p>
         </div>
-        {error && <p className="font-mono text-xs text-[#A5341A]">{error}</p>}
-        {msg && <p className="font-mono text-xs text-ink2">{msg}</p>}
+        {error && <p className="font-mono text-xs text-red">{error}</p>}
+        {msg && <p className="font-mono text-xs text-green">{msg}</p>}
         <button
           type="submit"
           disabled={pending}
-          className="rounded-chip bg-accent px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-press disabled:opacity-60"
+          className="rounded-chip bg-cobalt px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-paper disabled:opacity-60"
         >
           Save profile
         </button>

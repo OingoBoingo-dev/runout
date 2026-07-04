@@ -1,19 +1,22 @@
 import PQueue from 'p-queue';
+import { resolveAndPersist, type CoverCandidate } from '@/lib/covers';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import type { CatalogItem, Kind, Track } from '@/lib/types';
 
 /**
  * MusicBrainz proxy core. Clients never call MB directly — route handlers and
  * server components go through here. All outbound MB calls are serialized
- * through one queue at <=1 request / 1100ms per instance (documented caveat:
+ * through one queue at <=1 request/1100ms per instance (documented caveat:
  * serverless scale-out means per-instance queues; cache-aside keeps real MB
  * traffic near zero once the catalog warms).
+ *
+ * Covers are NOT assumed here: rows are upserted without art and the
+ * server-side resolver (lib/covers.ts) verifies and persists cover_url.
  */
 
 const MB_ROOT = 'https://musicbrainz.org/ws/2';
-const UA = `Runout/0.1 ( ${process.env.MB_CONTACT ?? 'contact-not-configured@example.com'} )`;
+const UA = `Ordko/0.1 ( ${process.env.MB_CONTACT ?? 'contact-not-configured@example.com'} )`;
 
-// Survive dev HMR / route-handler module duplication within an instance.
 const g = globalThis as unknown as { __mbQueue?: PQueue };
 const queue = (g.__mbQueue ??= new PQueue({ interval: 1100, intervalCap: 1, concurrency: 1 }));
 
@@ -84,43 +87,12 @@ const yearOf = (d?: string) => {
   return Number.isInteger(y) && y > 0 ? y : null;
 };
 
-export const caaCover = (rgMbid: string) =>
-  `https://coverartarchive.org/release-group/${rgMbid}/front-500`;
-
-type UpsertItem = Omit<CatalogItem, 'fetched_at'>;
-
-function fromReleaseGroup(rg: MBReleaseGroup): UpsertItem {
-  return {
-    mbid: rg.id,
-    kind: 'album',
-    title: rg.title ?? 'Untitled',
-    artist_name: artistOf(rg['artist-credit']),
-    artist_mbid: artistMbidOf(rg['artist-credit']),
-    year: yearOf(rg['first-release-date']),
-    primary_type: rg['primary-type'] ?? null,
-    cover_url: caaCover(rg.id),
-    wikipedia_url: relUrl(rg.relations, 'wikipedia'),
-    discogs_url: relUrl(rg.relations, 'discogs'),
-    tags: topTags(rg.tags),
-  };
-}
-
-function fromRecording(rec: MBRecording): UpsertItem {
-  const rgId = rec.releases?.[0]?.['release-group']?.id ?? null;
-  return {
-    mbid: rec.id,
-    kind: 'song',
-    title: rec.title ?? 'Untitled',
-    artist_name: artistOf(rec['artist-credit']),
-    artist_mbid: artistMbidOf(rec['artist-credit']),
-    year: yearOf(rec['first-release-date']),
-    primary_type: 'recording',
-    cover_url: rgId ? caaCover(rgId) : null,
-    wikipedia_url: relUrl(rec.relations, 'wikipedia'),
-    discogs_url: relUrl(rec.relations, 'discogs'),
-    tags: topTags(rec.tags),
-  };
-}
+/** Catalog row plus transient cover-resolution hints (never persisted). */
+export type NormalizedItem = Omit<CatalogItem, 'fetched_at' | 'cover_url'> & {
+  cover_url: string | null;
+  rgMbid?: string | null;
+  relMbids?: string[];
+};
 
 function relUrl(
   relations: { type?: string; url?: { resource?: string } }[] | undefined,
@@ -129,20 +101,77 @@ function relUrl(
   return relations?.find(r => r.type === type && r.url?.resource)?.url?.resource ?? null;
 }
 
+function fromReleaseGroup(rg: MBReleaseGroup): NormalizedItem {
+  return {
+    mbid: rg.id,
+    kind: 'album',
+    title: rg.title ?? 'Untitled',
+    artist_name: artistOf(rg['artist-credit']),
+    artist_mbid: artistMbidOf(rg['artist-credit']),
+    year: yearOf(rg['first-release-date']),
+    primary_type: rg['primary-type'] ?? null,
+    cover_url: null,
+    wikipedia_url: relUrl(rg.relations, 'wikipedia'),
+    discogs_url: relUrl(rg.relations, 'discogs'),
+    tags: topTags(rg.tags),
+    rgMbid: rg.id,
+    relMbids: (rg.releases ?? []).slice(0, 3).map(r => r.id),
+  };
+}
+
+function fromRecording(rec: MBRecording): NormalizedItem {
+  return {
+    mbid: rec.id,
+    kind: 'song',
+    title: rec.title ?? 'Untitled',
+    artist_name: artistOf(rec['artist-credit']),
+    artist_mbid: artistMbidOf(rec['artist-credit']),
+    year: yearOf(rec['first-release-date']),
+    primary_type: 'recording',
+    cover_url: null,
+    wikipedia_url: relUrl(rec.relations, 'wikipedia'),
+    discogs_url: relUrl(rec.relations, 'discogs'),
+    tags: topTags(rec.tags),
+    rgMbid: rec.releases?.[0]?.['release-group']?.id ?? null,
+    relMbids: (rec.releases ?? []).slice(0, 3).map(r => r.id),
+  };
+}
+
+export const asCoverCandidate = (i: NormalizedItem): CoverCandidate => ({
+  mbid: i.mbid,
+  kind: i.kind as Kind,
+  title: i.title,
+  artist_name: i.artist_name,
+  rgMbid: i.rgMbid ?? null,
+  relMbids: i.relMbids ?? [],
+});
+
 /* ---------- cache-aside ---------- */
 
-async function upsertCatalog(items: UpsertItem[]) {
+/** Upsert WITHOUT cover fields so verified art is never overwritten. */
+async function upsertCatalog(items: NormalizedItem[]) {
   if (!items.length) return;
   const admin = supabaseAdmin();
-  const { error } = await admin
-    .from('catalog_items')
-    .upsert(items.map(i => ({ ...i, fetched_at: new Date().toISOString() })), { onConflict: 'mbid' });
+  const rows = items.map(i => ({
+    mbid: i.mbid,
+    kind: i.kind,
+    title: i.title,
+    artist_name: i.artist_name,
+    artist_mbid: i.artist_mbid,
+    year: i.year,
+    primary_type: i.primary_type,
+    wikipedia_url: i.wikipedia_url,
+    discogs_url: i.discogs_url,
+    tags: i.tags,
+    fetched_at: new Date().toISOString(),
+  }));
+  const { error } = await admin.from('catalog_items').upsert(rows, { onConflict: 'mbid' });
   if (error) console.error('catalog upsert failed:', error.message);
 }
 
 /* ---------- public API ---------- */
 
-export async function searchMB(kind: Kind, q: string): Promise<UpsertItem[]> {
+export async function searchMB(kind: Kind, q: string): Promise<NormalizedItem[]> {
   const enc = encodeURIComponent(q);
   const items =
     kind === 'album'
@@ -154,11 +183,18 @@ export async function searchMB(kind: Kind, q: string): Promise<UpsertItem[]> {
         )).recordings ?? []).map(fromRecording);
   // Search results seed the catalog so list entries can reference them (FK).
   await upsertCatalog(items);
-  return items;
+  // Hand back persisted art where it already exists so results render covers.
+  const admin = supabaseAdmin();
+  const { data: existing } = await admin
+    .from('catalog_items')
+    .select('mbid, cover_url')
+    .in('mbid', items.map(i => i.mbid));
+  const covers = new Map((existing ?? []).map(r => [r.mbid, r.cover_url]));
+  return items.map(i => ({ ...i, cover_url: covers.get(i.mbid) ?? null }));
 }
 
 export interface ItemDetail {
-  item: UpsertItem;
+  item: NormalizedItem;
   tracks: Track[];
 }
 
@@ -174,6 +210,7 @@ export async function fetchItemDetail(mbid: string, kind: Kind): Promise<ItemDet
       .filter(r => r.status === 'Official' && r.date)
       .sort((a, b) => String(a.date).localeCompare(String(b.date)));
     const rel = official[0] ?? (rg.releases ?? []).find(r => r.status === 'Official') ?? rg.releases?.[0];
+    item.relMbids = (official.length ? official : rg.releases ?? []).slice(0, 3).map(r => r.id);
     let tracks: Track[] = [];
     if (rel) {
       try {
@@ -192,6 +229,7 @@ export async function fetchItemDetail(mbid: string, kind: Kind): Promise<ItemDet
       }
     }
     await upsertCatalog([item]);
+    await resolveAndPersist([asCoverCandidate(item)]);
     return { item, tracks };
   }
   const rec = await mbFetch<MBRecording>(
@@ -200,5 +238,6 @@ export async function fetchItemDetail(mbid: string, kind: Kind): Promise<ItemDet
   );
   const item = fromRecording(rec);
   await upsertCatalog([item]);
+  await resolveAndPersist([asCoverCandidate(item)]);
   return { item, tracks: [] };
 }
