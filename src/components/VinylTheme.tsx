@@ -5,6 +5,7 @@
    and the persisted tint must hydrate after mount (localStorage is client-only). */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Vinyl theme picker (aesthetic-synthesis, adapted to Pressing-Plant rules):
@@ -130,8 +131,11 @@ export function VinylTheme() {
         />
       </button>
 
-      {open && (
-        <>
+      {/* Portal to <body>: the glass nav's backdrop-filter creates a containing
+          block that would otherwise trap this fixed sheet inside the 56px bar. */}
+      {open &&
+        createPortal(
+          <>
           <button
             aria-label="Close theme picker"
             className="fixed inset-0 z-[60] cursor-default bg-ink/30"
@@ -240,8 +244,9 @@ export function VinylTheme() {
               jobs — color means something here.
             </p>
           </div>
-        </>
-      )}
+          </>,
+          document.body,
+        )}
     </>
   );
 }
