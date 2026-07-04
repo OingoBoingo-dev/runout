@@ -57,26 +57,26 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   }
 
   const input =
-    'w-full rounded-chip border border-ink/20 bg-white/60 px-4 py-3 text-ink placeholder:text-ink2/60 focus:border-accent focus:outline-none';
-  const label = 'mb-1.5 block font-mono text-[11px] uppercase tracking-[0.13em] text-ink2';
+    'w-full rounded-chip border border-hairline bg-ink/5 px-4 py-3 text-ink placeholder:text-secondary/60 focus:border-cobalt focus:outline-none';
+  const label = 'mb-1.5 block font-mono text-[11px] uppercase tracking-[0.13em] text-secondary';
 
   return (
     <div className="mx-auto mt-[6vh] w-full max-w-md px-5 pb-10">
       <div className="mb-6 text-center">
-        <span className="inline-flex items-center gap-2 font-display text-3xl text-paper">
-          RUNOUT <span aria-hidden className="inline-block h-3 w-3 rounded-[2px] bg-accent" />
+        <span className="inline-flex items-center gap-2 font-display text-3xl text-ink">
+          ORDKO <span aria-hidden className="inline-block h-3 w-3 rounded-[3px] bg-yellow" />
         </span>
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-muted">
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-secondary">
           Ranked lists for record obsessives
         </p>
       </div>
-      <div className="rounded-card bg-paper p-6 text-ink">
-        <div className="mb-4 flex gap-1 border-b border-ink/15">
+      <div className="rounded-card border border-hairline bg-card p-6 text-ink">
+        <div className="mb-4 flex gap-1 border-b border-hairline">
           <Link
             href="/login"
             aria-current={mode === 'login'}
             className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider ${
-              mode === 'login' ? 'border-b-2 border-accent text-ink' : 'text-ink2'
+              mode === 'login' ? 'border-b-2 border-cobalt text-ink' : 'text-secondary'
             }`}
           >
             Sign in
@@ -85,7 +85,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
             href="/signup"
             aria-current={mode === 'signup'}
             className={`px-4 py-2.5 font-mono text-xs uppercase tracking-wider ${
-              mode === 'signup' ? 'border-b-2 border-accent text-ink' : 'text-ink2'
+              mode === 'signup' ? 'border-b-2 border-cobalt text-ink' : 'text-secondary'
             }`}
           >
             Create account
@@ -124,16 +124,16 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
                 required
               />
             </div>
-            {error && <p className="font-mono text-xs text-[#A5341A]">{error}</p>}
+            {error && <p className="font-mono text-xs text-red">{error}</p>}
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-chip bg-accent px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-press hover:bg-accent/90 disabled:opacity-60"
+              className="w-full rounded-chip bg-cobalt px-4 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-paper hover:bg-cobalt/90 disabled:opacity-60"
             >
               {mode === 'signup' ? 'Create account' : 'Sign in'}
             </button>
-            <p className="font-mono text-[11px] leading-relaxed text-ink2">
-              Auth is handled by Supabase — passwords never touch Runout’s own code.
+            <p className="font-mono text-[11px] leading-relaxed text-secondary">
+              Auth is handled by Supabase — passwords never touch Ordko’s own code.
             </p>
           </form>
         )}

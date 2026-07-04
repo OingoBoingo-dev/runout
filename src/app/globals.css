@@ -1,12 +1,18 @@
 @import "tailwindcss";
 
+/* Pressing-Plant Primaries — paper ground, ink text, four flat print colors.
+   Color encodes meaning: yellow = rank, cobalt = interactive, red = emotion
+   (likes + Publish), green = confirmation. Max two primaries per component. */
 @theme {
-  --color-ink: #1A1917;
-  --color-paper: #EDE8DF;
-  --color-muted: #8F8A80;
-  --color-accent: #E4581F;
-  --color-press: #0F0E0D;
-  --color-ink2: #66615A;
+  --color-paper: #FAF6EC;
+  --color-ink: #16150F;
+  --color-secondary: #6F6A5E;
+  --color-yellow: #FFC72C;
+  --color-cobalt: #2C4BDF;
+  --color-red: #E8442E;
+  --color-green: #1CA24D;
+  --color-hairline: rgba(22, 21, 15, 0.08);
+  --color-card: #FFFFFF;
 
   --font-display: var(--font-archivo);
   --font-sans: var(--font-plex-sans);
@@ -14,27 +20,123 @@
 
   --radius-chip: 10px;
   --radius-card: 16px;
+  --radius-sheet: 24px;
+
+  /* "Soft blanket" easing — one curve everywhere (aesthetic-synthesis). */
+  --ease-blanket: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-paper);
+  color: var(--color-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-accent);
-  color: var(--color-press);
+  background: var(--color-yellow);
+  color: var(--color-ink);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-cobalt);
   outline-offset: 2px;
 }
 
+/* All catalog data is mono with lining, column-safe numerals. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Invisible Glass — chrome only (header, tab bar, action bars, sheets).
+   Neutral paper tint (derived from the theme paper so the vinyl picker
+   re-tints it); the content's color scrolls beneath and glows through. */
+.glass {
+  background: color-mix(in srgb, var(--color-paper) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  border: 0.5px solid color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass {
+    background: color-mix(in srgb, var(--color-paper) 95%, transparent);
+  }
+}
+
+/* Press micro-feedback: quick scale on the blanket curve, not color flashes. */
+.press {
+  transition: transform 0.3s var(--ease-blanket);
+}
+.press:active {
+  transform: scale(0.96);
+}
+
+/* Rounded zine offset-shadow (aesthetic-synthesis): graphic punch, soft under-blur. */
+.zine {
+  box-shadow:
+    7px 7px 0 rgba(22, 21, 15, 0.16),
+    7px 9px 18px rgba(22, 21, 15, 0.14);
+}
+.zine-sm {
+  box-shadow:
+    5px 5px 0 rgba(22, 21, 15, 0.14),
+    5px 7px 14px rgba(22, 21, 15, 0.12);
+}
+
+/* Cover skeleton shimmer (stops when the image loads). */
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.shimmer {
+  background-image: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(22, 21, 15, 0.05) 50%,
+    transparent 60%
+  );
+  background-size: 220% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes vinylspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* One orchestrated motion moment: list-entry stagger. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.stagger > * {
+  animation: rise 0.6s var(--ease-blanket) both;
+  animation-delay: calc(min(var(--i, 0), 20) * 60ms);
+}
+
+/* Hide scrollbars on snap shelves without killing scroll. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation: none !important;
     transition: none !important;
   }

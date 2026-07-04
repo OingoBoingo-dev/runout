@@ -12,7 +12,7 @@ export function CommentForm({ listId }: { listId: string }) {
 
   return (
     <form
-      className="flex max-w-2xl flex-col items-start gap-2.5"
+      className="glass flex max-w-2xl flex-col items-start gap-2.5 rounded-card p-3"
       onSubmit={e => {
         e.preventDefault();
         const body = ref.current?.value.trim() ?? '';
@@ -36,13 +36,13 @@ export function CommentForm({ listId }: { listId: string }) {
         maxLength={500}
         placeholder="Say something about this list…"
         aria-label="Write a comment"
-        className="min-h-[64px] w-full rounded-chip border border-paper/15 bg-paper/5 p-3 text-paper placeholder:text-muted focus:border-accent focus:outline-none"
+        className="min-h-[64px] w-full rounded-chip border border-hairline bg-ink/5 p-3 text-ink placeholder:text-secondary focus:border-cobalt focus:outline-none"
       />
-      {error && <p className="font-mono text-xs text-[#F08A63]">{error}</p>}
+      {error && <p className="font-mono text-xs text-red">{error}</p>}
       <button
         type="submit"
         disabled={pending}
-        className="rounded-chip border border-paper/20 px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-paper disabled:opacity-50"
+        className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40 disabled:opacity-50"
       >
         Post comment
       </button>

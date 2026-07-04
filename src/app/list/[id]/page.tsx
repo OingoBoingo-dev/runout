@@ -62,18 +62,18 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="mb-6">
-        <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
+        <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-cobalt">
           {list.status === 'draft' ? 'Draft list — only you can see this' : 'List'} · {list.kind}s
         </p>
         <h1 className="font-display text-3xl sm:text-4xl break-words">{list.title}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-2.5">
           <Link
             href={`/u/${owner.username}`}
-            className="font-mono text-sm text-paper hover:text-accent"
+            className="font-mono text-sm text-ink hover:text-cobalt"
           >
             @{owner.username}
           </Link>
-          <span className="font-mono text-xs tabular-nums text-muted">
+          <span className="font-mono text-xs tabular-nums text-secondary">
             · {fmtCount(entries.length, 'entry', 'entries')} · updated {timeAgo(list.updated_at)}
           </span>
         </div>
@@ -89,76 +89,80 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
           {isOwner && (
             <Link
               href={`/lists/${list.id}/edit`}
-              className="rounded-chip border border-paper/20 px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-paper"
+              className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
             >
               Edit list
             </Link>
           )}
           {list.status === 'draft' && (
-            <span className="rounded-full bg-accent px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-press">
+            <span className="rounded-full bg-yellow px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-ink">
               draft
             </span>
           )}
         </div>
       </div>
 
-      <div className="divide-y divide-ink/10 rounded-card bg-paper py-1 text-ink">
-        {entries.map(e => {
+      <div className="stagger divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
+        {entries.map((e, idx) => {
           const it = e.catalog_items;
           if (!it) return null;
           return (
-            <div key={e.position} className="flex items-center gap-3 px-4 py-3">
-              <Rank pos={e.position} max={maxPos} accent={e.position <= 3} />
-              <Link href={`/item/${it.mbid}`} className="flex-none">
+            <div
+              key={e.position}
+              className="flex items-center gap-3 px-4 py-3"
+              style={{ '--i': Math.min(idx, 20) } as React.CSSProperties}
+            >
+              <Rank pos={e.position} max={maxPos} sticker={e.position <= 3} />
+              <Link href={`/item/${it.mbid}`} className="press flex-none">
                 <Cover
                   src={it.cover_url}
                   title={it.title}
                   artist={it.artist_name}
-                  className={e.position <= 10 ? 'w-20' : 'w-16'}
+                  className={`zine-sm ${e.position <= 10 ? 'w-20' : 'w-16'}`}
                 />
               </Link>
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/item/${it.mbid}`}
-                  className="block truncate font-semibold hover:text-accent"
+                  className="block truncate font-semibold hover:text-cobalt"
                 >
                   {it.title}
                 </Link>
-                <p className="truncate font-mono text-xs tabular-nums text-ink2">
+                <p className="truncate font-mono text-xs tabular-nums text-secondary">
                   {it.artist_name}
                   {fmtYear(it.year) ? ` · ${fmtYear(it.year)}` : ''}
                 </p>
-                {e.blurb && <p className="mt-1 break-words text-[13.5px] text-[#3d3a35]">{e.blurb}</p>}
+                {e.blurb && <p className="mt-1 break-words text-[13.5px] text-ink/80">{e.blurb}</p>}
               </div>
             </div>
           );
         })}
         {entries.length === 0 && (
-          <p className="px-4 py-8 text-center font-mono text-sm text-ink2">
+          <p className="px-4 py-8 text-center font-mono text-sm text-secondary">
             Nothing ranked yet.
           </p>
         )}
       </div>
 
       <section className="mt-10">
-        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
           Comments ({fmtInt(comments.length)})
         </p>
         {user ? (
           <CommentForm listId={list.id} />
         ) : (
-          <p className="font-mono text-sm text-muted">
-            <Link href="/login" className="text-accent underline underline-offset-4">
+          <p className="font-mono text-sm text-secondary">
+            <Link href="/login" className="text-cobalt underline underline-offset-4">
               Sign in
             </Link>{' '}
             to join the thread.
           </p>
         )}
-        <div className="mt-4 divide-y divide-paper/10">
+        <div className="mt-4 divide-y divide-hairline">
           {comments.map(c => (
             <div key={c.id} className="py-4">
-              <p className="font-mono text-[11px] tabular-nums text-muted">
-                <Link href={`/u/${c.profiles?.username ?? ''}`} className="hover:text-paper">
+              <p className="font-mono text-[11px] tabular-nums text-secondary">
+                <Link href={`/u/${c.profiles?.username ?? ''}`} className="hover:text-ink">
                   @{c.profiles?.username ?? 'unknown'}
                 </Link>{' '}
                 · {timeAgo(c.created_at)}
@@ -177,7 +181,7 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
             </div>
           ))}
           {comments.length === 0 && (
-            <p className="py-4 font-mono text-xs text-muted">
+            <p className="py-4 font-mono text-xs text-secondary">
               No comments yet — the deadwax is blank.
             </p>
           )}

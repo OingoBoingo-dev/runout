@@ -93,29 +93,29 @@ export default async function ProfilePage({
       <div className="flex flex-wrap items-start gap-5">
         <span
           aria-hidden
-          className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full bg-paper font-mono text-2xl font-semibold text-ink"
+          className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full bg-ink font-mono text-2xl font-semibold text-paper"
         >
           {monogram}
         </span>
         <div className="min-w-[220px] flex-1">
           <h1 className="font-display text-3xl">{profile.display_name || profile.username}</h1>
-          <p className="mt-1 font-mono text-[13px] text-muted">@{profile.username}</p>
+          <p className="mt-1 font-mono text-[13px] text-secondary">@{profile.username}</p>
           {profile.bio && <p className="mt-2 max-w-xl">{profile.bio}</p>}
-          <p className="mt-4 font-mono text-[12.5px] tabular-nums text-muted">
-            <b className="font-semibold text-paper">{fmtInt(pubCount)}</b>{' '}
+          <p className="mt-4 font-mono text-[12.5px] tabular-nums text-secondary">
+            <b className="font-semibold text-ink">{fmtInt(pubCount)}</b>{' '}
             {pubCount === 1 ? 'list' : 'lists'} ·{' '}
-            <b className="font-semibold text-paper">{fmtInt(ratings.length)}</b>{' '}
+            <b className="font-semibold text-ink">{fmtInt(ratings.length)}</b>{' '}
             {ratings.length === 1 ? 'rating' : 'ratings'} ·{' '}
-            <b className="font-semibold text-paper">{fmtInt(followers)}</b>{' '}
+            <b className="font-semibold text-ink">{fmtInt(followers)}</b>{' '}
             {followers === 1 ? 'follower' : 'followers'} ·{' '}
-            <b className="font-semibold text-paper">{fmtInt(following)}</b> following
+            <b className="font-semibold text-ink">{fmtInt(following)}</b> following
           </p>
           <div className="mt-4 flex gap-2">
             {own ? (
               <>
                 <Link
                   href="/settings"
-                  className="rounded-chip border border-paper/20 px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-paper"
+                  className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
                 >
                   Edit profile
                 </Link>
@@ -126,7 +126,7 @@ export default async function ProfilePage({
             ) : (
               <Link
                 href="/login"
-                className="rounded-chip border border-paper/20 px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-paper"
+                className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
               >
                 Sign in to follow
               </Link>
@@ -136,7 +136,7 @@ export default async function ProfilePage({
       </div>
 
       <section className="mt-8">
-        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted">
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
           Pinned top 4
         </p>
         {pins.length ? (
@@ -148,22 +148,22 @@ export default async function ProfilePage({
             ))}
           </div>
         ) : (
-          <p className="font-mono text-xs text-muted">
-            <span className="rounded-full border border-dashed border-muted px-3 py-1 uppercase tracking-[0.11em]">
+          <p className="font-mono text-xs text-secondary">
+            <span className="rounded-full border border-dashed border-secondary px-3 py-1 uppercase tracking-[0.11em]">
               nothing pinned yet
             </span>
           </p>
         )}
       </section>
 
-      <div className="mt-8 flex gap-0.5 border-b border-paper/15">
+      <div className="mt-8 flex gap-0.5 border-b border-hairline">
         {TABS.map(t => (
           <Link
             key={t}
             href={`/u/${profile.username}${t === 'lists' ? '' : `?tab=${t}`}`}
             aria-current={tab === t}
             className={`px-4 py-3 font-mono text-xs uppercase tracking-wider ${
-              tab === t ? 'border-b-2 border-accent text-paper' : 'text-muted hover:text-paper'
+              tab === t ? 'border-b-2 border-cobalt text-ink' : 'text-secondary hover:text-ink'
             }`}
           >
             {t}
@@ -174,20 +174,20 @@ export default async function ProfilePage({
       <div className="mt-5">
         {tab === 'lists' &&
           (lists.length ? (
-            <div className="divide-y divide-ink/10 rounded-card bg-paper py-1 text-ink">
+            <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
               {lists.map(l => (
                 <Link key={l.id} href={`/list/${l.id}`} className="group flex items-center gap-3 px-4 py-3.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold group-hover:text-accent">
+                    <span className="block truncate font-semibold group-hover:text-cobalt">
                       {l.title}
                     </span>
-                    <span className="block font-mono text-xs tabular-nums text-ink2">
+                    <span className="block font-mono text-xs tabular-nums text-secondary">
                       {l.kind}s · {fmtCount(entryCounts.get(l.id) ?? 0, 'entry', 'entries')} · updated{' '}
                       {timeAgo(l.updated_at)}
                     </span>
                   </span>
                   {l.status === 'draft' && (
-                    <span className="rounded-full bg-accent px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-press">
+                    <span className="rounded-full bg-yellow px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-ink">
                       draft
                     </span>
                   )}
@@ -204,7 +204,7 @@ export default async function ProfilePage({
 
         {tab === 'ratings' &&
           (ratings.length ? (
-            <div className="divide-y divide-ink/10 rounded-card bg-paper py-1 text-ink">
+            <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
               {ratings.map(r => {
                 const it = r.catalog_items;
                 if (!it) return null;
@@ -212,11 +212,11 @@ export default async function ProfilePage({
                   <Link key={r.item_mbid} href={`/item/${it.mbid}`} className="group flex items-center gap-3 px-4 py-3">
                     <Cover src={it.cover_url} title={it.title} artist={it.artist_name} className="w-12 flex-none" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold group-hover:text-accent">{it.title}</span>
-                      <span className="block truncate font-mono text-xs text-ink2">{it.artist_name}</span>
+                      <span className="block truncate font-semibold group-hover:text-cobalt">{it.title}</span>
+                      <span className="block truncate font-mono text-xs text-secondary">{it.artist_name}</span>
                     </span>
                     <Stars value={Number(r.value)} size={14} />
-                    <span className="font-mono text-xs tabular-nums text-ink2">{fmtRating(Number(r.value))}</span>
+                    <span className="font-mono text-xs tabular-nums text-secondary">{fmtRating(Number(r.value))}</span>
                   </Link>
                 );
               })}
@@ -237,13 +237,13 @@ export default async function ProfilePage({
 
 function EmptyCard({ title, body, cta }: { title: string; body: string; cta?: { href: string; label: string } }) {
   return (
-    <div className="rounded-card bg-paper p-10 text-center text-ink">
+    <div className="rounded-card border border-hairline bg-card p-10 text-center text-ink">
       <h2 className="font-display text-xl">{title}</h2>
-      <p className="mt-2 text-ink2">{body}</p>
+      <p className="mt-2 text-secondary">{body}</p>
       {cta && (
         <Link
           href={cta.href as '/explore'}
-          className="mt-4 inline-block rounded-chip bg-accent px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-press"
+          className="mt-4 inline-block rounded-chip bg-cobalt px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-paper"
         >
           {cta.label}
         </Link>
@@ -262,22 +262,22 @@ async function ActivityTab({ profileId }: { profileId: string }) {
     .limit(40);
   const acts = data ?? [];
   if (!acts.length) {
-    return <p className="font-mono text-xs text-muted">Nothing on the ledger yet.</p>;
+    return <p className="font-mono text-xs text-secondary">Nothing on the ledger yet.</p>;
   }
   return (
-    <div className="divide-y divide-paper/10">
+    <div className="divide-y divide-hairline">
       {acts.map(a => (
         <p key={a.id} className="flex items-center gap-3 py-3.5">
-          <span className="flex-none rounded-full border border-paper/15 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
+          <span className="flex-none rounded-full border border-hairline px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] text-secondary">
             {a.verb}
           </span>
-          <span className="flex-1 font-mono text-sm text-muted">
+          <span className="flex-1 font-mono text-sm text-secondary">
             {a.verb === 'publish' && 'published a list'}
             {a.verb === 'rate' && 'rated a record'}
             {a.verb === 'follow' && 'followed a collector'}
             {a.verb === 'comment' && 'commented on a list'}
           </span>
-          <time className="font-mono text-[11px] tabular-nums text-muted">{timeAgo(a.created_at)}</time>
+          <time className="font-mono text-[11px] tabular-nums text-secondary">{timeAgo(a.created_at)}</time>
         </p>
       ))}
     </div>

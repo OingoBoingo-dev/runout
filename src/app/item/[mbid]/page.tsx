@@ -100,15 +100,15 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap gap-6 rounded-card bg-paper p-6 text-ink">
+      <div className="flex flex-wrap gap-6 rounded-card border border-hairline bg-card p-6 text-ink">
         <Cover
           src={item.cover_url}
           title={item.title}
           artist={item.artist_name}
-          className="w-[min(240px,60vw)] flex-none rounded-card shadow-xl"
+          className="zine w-[min(240px,60vw)] flex-none rounded-card"
         />
         <div className="min-w-[220px] flex-1">
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink2">
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
             {item.kind}
             {yr ? ` · ${yr}` : ''}
           </p>
@@ -120,7 +120,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                 <Link
                   key={t}
                   href={`/explore?kind=${item.kind}&tag=${encodeURIComponent(t)}`}
-                  className="rounded-chip border border-ink/20 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-ink2 hover:border-ink hover:text-ink"
+                  className="rounded-chip border border-hairline px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-secondary hover:border-ink hover:text-ink"
                 >
                   {t}
                 </Link>
@@ -130,7 +130,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
 
           <div className="mt-6 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="min-w-[104px] font-mono text-[10px] uppercase tracking-[0.16em] text-ink2">
+              <span className="min-w-[104px] font-mono text-[10px] uppercase tracking-[0.16em] text-secondary">
                 Community
               </span>
               <Stars value={avg} size={16} />
@@ -139,7 +139,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="min-w-[104px] font-mono text-[10px] uppercase tracking-[0.16em] text-ink2">
+              <span className="min-w-[104px] font-mono text-[10px] uppercase tracking-[0.16em] text-secondary">
                 Your rating
               </span>
               {user ? (
@@ -150,7 +150,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                   </span>
                 </>
               ) : (
-                <Link href="/login" className="font-mono text-[13px] text-accent underline underline-offset-4">
+                <Link href="/login" className="font-mono text-[13px] text-cobalt underline underline-offset-4">
                   Sign in to rate
                 </Link>
               )}
@@ -164,7 +164,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-chip border border-ink/20 px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide hover:border-accent hover:text-accent"
+                className="rounded-chip border border-hairline px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide hover:border-cobalt hover:text-cobalt"
               >
                 {label} ↗
               </a>
@@ -176,8 +176,8 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
 
       <div className={`mt-6 grid gap-6 ${item.kind === 'album' ? 'md:grid-cols-2' : ''}`}>
         {item.kind === 'album' && (
-          <section className="rounded-card bg-paper p-5 text-ink">
-            <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-ink2">
+          <section className="rounded-card border border-hairline bg-card p-5 text-ink">
+            <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-secondary">
               Tracklist
             </h2>
             {tracks.length ? (
@@ -185,20 +185,20 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                 {tracks.map((t, i) => (
                   <li
                     key={i}
-                    className="flex items-baseline gap-3 border-b border-ink/10 py-2 text-sm last:border-0"
+                    className="flex items-baseline gap-3 border-b border-hairline py-2 text-sm last:border-0"
                   >
-                    <span className="w-6 flex-none text-right font-mono text-[11px] tabular-nums text-ink2">
+                    <span className="w-6 flex-none text-right font-mono text-[11px] tabular-nums text-secondary">
                       {t.pos}
                     </span>
                     <span className="min-w-0 flex-1 break-words">{t.title}</span>
-                    <span className="flex-none font-mono text-[11px] tabular-nums text-ink2">
+                    <span className="flex-none font-mono text-[11px] tabular-nums text-secondary">
                       {msToLen(t.len)}
                     </span>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="font-mono text-sm text-ink2">
+              <p className="font-mono text-sm text-secondary">
                 {tracklistNote ?? 'No tracklist on file for this release.'}
               </p>
             )}
@@ -206,26 +206,26 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
         )}
 
         <section>
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-cobalt">
             Appears in {fmtCount(new Set(appears.map(a => a.lists.id)).size, 'list')}
           </p>
           {appears.length ? (
             <>
               {best && (
-                <div className="mb-3 flex items-center gap-5 rounded-card bg-paper p-5 text-ink">
+                <div className="mb-3 flex items-center gap-5 rounded-card border border-hairline bg-card p-5 text-ink">
                   <Rank
                     pos={best.position}
                     max={listLengths.get(best.lists.id) ?? best.position}
                     label="best position"
                     size="lg"
-                    accent
+                    sticker
                   />
-                  <p className="max-w-[30ch] text-sm text-ink2">
+                  <p className="max-w-[30ch] text-sm text-secondary">
                     Its highest placing across all published lists.
                   </p>
                 </div>
               )}
-              <div className="divide-y divide-ink/10 rounded-card bg-paper py-1 text-ink">
+              <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
                 {appears.map((a, i) => (
                   <Link
                     key={`${a.lists.id}-${i}`}
@@ -234,10 +234,10 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                   >
                     <Rank pos={a.position} max={listLengths.get(a.lists.id) ?? a.position} size="sm" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold group-hover:text-accent">
+                      <span className="block truncate font-semibold group-hover:text-cobalt">
                         {a.lists.title}
                       </span>
-                      <span className="block font-mono text-xs text-ink2">
+                      <span className="block font-mono text-xs text-secondary">
                         by @{a.lists.profiles?.username ?? 'unknown'} ·{' '}
                         {fmtCount(listLengths.get(a.lists.id) ?? 0, 'entry', 'entries')}
                       </span>
@@ -247,12 +247,12 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
               </div>
             </>
           ) : (
-            <div className="rounded-card bg-paper p-8 text-center text-ink">
+            <div className="rounded-card border border-hairline bg-card p-8 text-center text-ink">
               <h3 className="font-display text-lg">Not on any list yet</h3>
-              <p className="mt-1 text-sm text-ink2">Put it somewhere — that’s the whole point.</p>
+              <p className="mt-1 text-sm text-secondary">Put it somewhere — that’s the whole point.</p>
               <Link
                 href="/lists/new"
-                className="mt-4 inline-block rounded-chip bg-accent px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-press"
+                className="mt-4 inline-block rounded-chip bg-cobalt px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-paper"
               >
                 Start a list
               </Link>

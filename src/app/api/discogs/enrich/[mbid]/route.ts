@@ -32,7 +32,7 @@ export async function GET(
   const res = await fetch(`https://api.discogs.com/database/search?${q}`, {
     headers: {
       Authorization: `Discogs token=${token}`,
-      'User-Agent': `Runout/0.1 ( ${process.env.MB_CONTACT ?? ''} )`,
+      'User-Agent': `Ordko/0.1 ( ${process.env.MB_CONTACT ?? ''} )`,
     },
     next: { revalidate: 86400 },
   });
