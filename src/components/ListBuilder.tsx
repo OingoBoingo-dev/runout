@@ -11,8 +11,9 @@ import {
 } from 'react';
 import { saveList, setListStatus } from '@/app/actions/lists';
 import { Cover } from '@/components/Cover';
+import { PublishSheet, type PublishChoice } from '@/components/PublishSheet';
 import { fmtInt, fmtPos, fmtYear } from '@/lib/format';
-import type { Kind, ListStatus } from '@/lib/types';
+import type { Kind, ListStatus, ListType } from '@/lib/types';
 
 export interface BuilderEntry {
   mbid: string;
@@ -38,6 +39,8 @@ export function ListBuilder(props: {
   initialKind?: Kind;
   initialStatus?: ListStatus;
   initialEntries?: BuilderEntry[];
+  initialListType?: ListType | null;
+  initialGenres?: string[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(props.initialTitle ?? '');
@@ -45,6 +48,11 @@ export function ListBuilder(props: {
   const [kind, setKind] = useState<Kind>(props.initialKind ?? 'album');
   const [status] = useState<ListStatus>(props.initialStatus ?? 'draft');
   const [entries, setEntries] = useState<BuilderEntry[]>(props.initialEntries ?? []);
+  // Publish decisions live in the sheet; the builder keeps the last-known
+  // values so draft saves never wipe an already-chosen type/genres.
+  const [listType, setListType] = useState<ListType | null>(props.initialListType ?? null);
+  const [genres, setGenres] = useState<string[]>(props.initialGenres ?? []);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -295,7 +303,7 @@ export function ListBuilder(props: {
     btn?.focus();
   }, [editPos]);
 
-  const persist = (nextStatus: ListStatus) => {
+  const persist = (nextStatus: ListStatus, lt: ListType | null, gs: string[]) => {
     setError(null);
     startTransition(async () => {
       const res = await saveList({
@@ -304,14 +312,33 @@ export function ListBuilder(props: {
         description,
         kind,
         status: nextStatus,
+        list_type: lt,
+        genres: gs,
         entries: entries.map(e => ({ mbid: e.mbid, blurb: e.blurb })),
       });
-      if (res.error) setError(res.error);
-      else if (res.id) {
+      if (res.error) {
+        setSheetOpen(false);
+        setError(res.error);
+      } else if (res.id) {
         router.push(`/list/${res.id}`);
         router.refresh();
       }
     });
+  };
+
+  const openSheet = () => {
+    setError(null);
+    if (entries.length === 0) {
+      setError(`Add at least one ${kind} before deciding how to share this list.`);
+      return;
+    }
+    setSheetOpen(true);
+  };
+
+  const confirmSheet = (choice: PublishChoice) => {
+    setListType(choice.listType);
+    setGenres(choice.genres);
+    persist(choice.status, choice.listType, choice.genres);
   };
 
   const unpublish = () => {
@@ -402,12 +429,12 @@ export function ListBuilder(props: {
         {error && <p className="mt-3 font-mono text-xs text-red">{error}</p>}
         {/* Save/Publish — floating glass action bar on mobile, inline on desktop. */}
         <div className="mt-4 flex flex-wrap gap-2 max-md:fixed max-md:bottom-[calc(88px+env(safe-area-inset-bottom))] max-md:left-1/2 max-md:z-40 max-md:mt-0 max-md:w-[min(94vw,400px)] max-md:-translate-x-1/2 max-md:justify-center max-md:rounded-sheet max-md:p-2 max-md:glass">
-          {status === 'published' ? (
+          {status !== 'draft' ? (
             <>
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => persist('published')}
+                onClick={openSheet}
                 className="press rounded-chip bg-red px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-paper disabled:opacity-60"
               >
                 Save changes
@@ -426,7 +453,7 @@ export function ListBuilder(props: {
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => persist('published')}
+                onClick={openSheet}
                 className="press rounded-chip bg-red px-5 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-paper disabled:opacity-60"
               >
                 Publish list
@@ -434,7 +461,7 @@ export function ListBuilder(props: {
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => persist('draft')}
+                onClick={() => persist('draft', listType, genres)}
                 className="rounded-chip border border-hairline px-5 py-3 font-mono text-xs uppercase tracking-wider hover:border-ink disabled:opacity-60"
               >
                 {props.listId ? 'Save draft' : 'Save as draft'}
@@ -657,6 +684,19 @@ export function ListBuilder(props: {
           </div>
         </section>
       </div>
+
+      {/* Publish decision popup — mounted per opening so it starts fresh. */}
+      {sheetOpen && (
+        <PublishSheet
+          entryCount={entries.length}
+          pending={pending}
+          initialStatus={status}
+          initialListType={listType}
+          initialGenres={genres}
+          onClose={() => setSheetOpen(false)}
+          onConfirm={confirmSheet}
+        />
+      )}
     </div>
   );
 }
