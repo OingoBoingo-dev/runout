@@ -89,3 +89,13 @@ Strikes: A[1] B[0]. Shared hotspots (globals.css/layout/lib) READ-ONLY for both.
 - Usage: agents spawned 3 (Crate, Lathe-A, Lathe-B; Needle run by Foreman in
   markup mode — no live browser available in session), tasks 2/2 shipped,
   1 return (A), 0 parked tasks, 1 parked verify-dod check.
+
+### Ship addendum (deploy mechanism)
+- "Auto-deploys from main" premise is FALSE: the Vercel project has NO Git
+  integration (no deployments/check-runs/statuses on GitHub; `vercel whoami`
+  nudges to connect a repo). All prior deploys were owner CLI deploys.
+- Shipped via `npx vercel deploy --prod --yes` → dpl runout-nblf2x0zy READY.
+- Prod smoke: home 307, explore/list/profile 200; Copy link + og:image live;
+  OG PNG 200 (rendered 2-cover fallback layout on prod — some cover fetches
+  timed out on Vercel runtime; no void, graceful). Banner markup live.
+- Future cycles: ship step = merge to main, push, then CLI prod deploy.
