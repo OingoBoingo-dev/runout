@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Cover } from '@/components/Cover';
@@ -12,6 +13,27 @@ import type { CatalogItem, List, Rating } from '@/lib/types';
 
 const TABS = ['lists', 'ratings', 'activity'] as const;
 type Tab = (typeof TABS)[number];
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const profile = await getProfileByUsername(username.toLowerCase());
+  if (!profile) return {};
+
+  const name = profile.display_name || profile.username;
+  const title = `${name} on Ordko`;
+  const description = `Ranked lists and ratings by @${profile.username}`;
+
+  return {
+    title: name,
+    description,
+    openGraph: { title, description, type: 'profile', username: profile.username },
+    twitter: { card: 'summary_large_image', title, description },
+  };
+}
 
 export default async function ProfilePage({
   params,
