@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { updateProfile } from '@/app/actions/profile';
+import { BorderPicker } from '@/components/BorderPicker';
 import { MediaUpload } from '@/components/MediaUpload';
 
 export function SettingsForm({
@@ -39,6 +40,13 @@ export function SettingsForm({
           <MediaUpload kind="avatar" currentUrl={avatarUrl} />
           <MediaUpload kind="background" currentUrl={backgroundUrl} />
         </div>
+      </section>
+
+      <section className="rounded-card border border-hairline bg-card p-6 text-ink">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+          Profile frame
+        </p>
+        <BorderPicker />
       </section>
 
     <form

@@ -168,6 +168,32 @@ html.ambient body::before {
   }
 }
 
+/* ---- Avatar frames (lib/borders.tsx) ------------------------------------
+   Locked frames rotate a single SVG <g> slowly (>=45s) about the 80x80
+   center. Duration comes in per-instance via the --spin-dur custom prop so
+   one keyframe serves every frame. The static markup is already drawn in
+   each frame's spec'd resting pose, so killing the animation (reduced
+   motion, below) simply holds that pose — no separate rest styles needed. */
+@keyframes frame-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes frame-spin-ccw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+.frame-spin {
+  /* Rotate about the 80x80 viewBox center, independent of the spinning
+     group's own bbox (some frames spin partial-arc groups). */
+  transform-origin: 40px 40px;
+  animation: frame-spin var(--spin-dur, 90s) linear infinite;
+}
+.frame-spin-ccw {
+  animation-name: frame-spin-ccw;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

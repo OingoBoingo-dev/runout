@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { getBorder } from '@/lib/borders';
 import { supabaseServer } from '@/lib/supabase/server';
 import { getScheme } from '@/lib/themes';
 import { profileSchema } from '@/lib/validate';
@@ -83,6 +84,60 @@ export async function saveThemeScheme(id: string | null): Promise<{ ok: true } |
     // PostgREST "column not found" (PGRST204) → migration not applied yet.
     if (error.code === 'PGRST204' || /theme_scheme|column|schema/i.test(error.message))
       return { error: 'theme sync pending migration' };
+    return { error: error.message };
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+/**
+ * Unlock data for the avatar-frame picker, fetched lazily when it mounts.
+ * Mirrors getThemeAccess: signed-out (or any failure) degrades to zero
+ * contributions / no saved frame, and a missing profiles.border_id column
+ * (pending migration) reads as null.
+ */
+export async function getBorderAccess(): Promise<{
+  contributions: number;
+  savedBorder: string | null;
+}> {
+  const supabase = await supabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { contributions: 0, savedBorder: null };
+  const [contributions, prof] = await Promise.all([
+    countContributions(supabase, user.id),
+    // Errors (e.g. border_id column pending migration) leave data null,
+    // which degrades to "no saved frame".
+    supabase.from('profiles').select('border_id').eq('id', user.id).maybeSingle(),
+  ]);
+  const savedBorder =
+    (prof.data as { border_id?: string | null } | null)?.border_id ?? null;
+  return { contributions, savedBorder: getBorder(savedBorder) ? savedBorder : null };
+}
+
+/**
+ * Persist the chosen frame (null = today's plain look). Locked frames are
+ * re-checked server-side against the same contribution count. A missing
+ * profiles.border_id column (pending migration) is swallowed into a sentinel
+ * error so the client can keep its local selection.
+ */
+export async function saveBorder(id: string | null): Promise<{ ok: true } | ActionError> {
+  const border = id === null ? null : getBorder(id);
+  if (id !== null && !border) return { error: 'Unknown frame' };
+  const auth = await requireUser();
+  if ('error' in auth) return auth;
+  const { supabase, user } = auth;
+  if (border?.unlockAt) {
+    const contributions = await countContributions(supabase, user.id);
+    if (contributions < border.unlockAt)
+      return { error: `Unlocks at ${border.unlockAt} contributions` };
+  }
+  const { error } = await supabase.from('profiles').update({ border_id: id }).eq('id', user.id);
+  if (error) {
+    // PostgREST "column not found" (PGRST204) → migration not applied yet.
+    if (error.code === 'PGRST204' || /border_id|column|schema/i.test(error.message))
+      return { error: 'frame sync pending migration' };
     return { error: error.message };
   }
   revalidatePath('/', 'layout');
