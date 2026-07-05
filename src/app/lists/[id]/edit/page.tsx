@@ -48,6 +48,8 @@ export default async function EditListPage({ params }: { params: Promise<{ id: s
         initialKind={list.kind as Kind}
         initialStatus={list.status as ListStatus}
         initialEntries={entries}
+        initialListType={list.list_type}
+        initialGenres={list.genres}
       />
     </div>
   );
