@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Cover } from '@/components/Cover';
 import { FollowButton } from '@/components/FollowButton';
+import { ProfileBanner } from '@/components/ProfileBanner';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Stars } from '@/components/Stars';
 import { getProfileByUsername } from '@/lib/data';
@@ -79,6 +80,28 @@ export default async function ProfilePage({
       entryCounts.set(l.id, (counts ?? []).filter(c => c.list_id === l.id).length);
   }
 
+  // Banner covers: pins first; else the newest published list's first covers
+  // (one narrow query, only when needed); else no banner at all.
+  let bannerCovers: (string | null)[] = pins.map(p => p.cover_url);
+  if (!bannerCovers.some(Boolean)) {
+    const newestPublished = lists
+      .filter(l => l.status === 'published')
+      .slice()
+      .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))[0];
+    if (newestPublished) {
+      const { data: bannerEntries } = await supabase
+        .from('list_entries')
+        .select('position, catalog_items(cover_url)')
+        .eq('list_id', newestPublished.id)
+        .order('position', { ascending: true })
+        .limit(5);
+      bannerCovers = (bannerEntries ?? []).map(
+        e => (e.catalog_items as unknown as { cover_url: string | null } | null)?.cover_url ?? null
+      );
+    }
+  }
+  const hasBanner = bannerCovers.some(Boolean);
+
   const monogram =
     (profile.display_name || profile.username)
       .split(/\s+/)
@@ -90,47 +113,60 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
-      <div className="flex flex-wrap items-start gap-5">
-        <span
-          aria-hidden
-          className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full bg-ink font-mono text-2xl font-semibold text-paper"
-        >
-          {monogram}
-        </span>
-        <div className="min-w-[220px] flex-1">
-          <h1 className="font-display text-3xl">{profile.display_name || profile.username}</h1>
-          <p className="mt-1 font-mono text-[13px] text-secondary">@{profile.username}</p>
-          {profile.bio && <p className="mt-2 max-w-xl">{profile.bio}</p>}
-          <p className="mt-4 font-mono text-[12.5px] tabular-nums text-secondary">
-            <b className="font-semibold text-ink">{fmtInt(pubCount)}</b>{' '}
-            {pubCount === 1 ? 'list' : 'lists'} ·{' '}
-            <b className="font-semibold text-ink">{fmtInt(ratings.length)}</b>{' '}
-            {ratings.length === 1 ? 'rating' : 'ratings'} ·{' '}
-            <b className="font-semibold text-ink">{fmtInt(followers)}</b>{' '}
-            {followers === 1 ? 'follower' : 'followers'} ·{' '}
-            <b className="font-semibold text-ink">{fmtInt(following)}</b> following
-          </p>
-          <div className="mt-4 flex gap-2">
-            {own ? (
-              <>
+      <div className="relative">
+        <ProfileBanner covers={bannerCovers} />
+        <div className={`flex flex-wrap items-start gap-5${hasBanner ? ' relative p-4 sm:p-5' : ''}`}>
+          {profile.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.avatar_url}
+              alt=""
+              loading="lazy"
+              className="h-[76px] w-[76px] flex-none rounded-full object-cover"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full bg-ink font-mono text-2xl font-semibold text-paper"
+            >
+              {monogram}
+            </span>
+          )}
+          <div className="min-w-[220px] flex-1">
+            <h1 className="font-display text-3xl">{profile.display_name || profile.username}</h1>
+            <p className="mt-1 font-mono text-[13px] text-secondary">@{profile.username}</p>
+            {profile.bio && <p className="mt-2 max-w-xl">{profile.bio}</p>}
+            <p className="mt-4 font-mono text-[12.5px] tabular-nums text-secondary">
+              <b className="font-semibold text-ink">{fmtInt(pubCount)}</b>{' '}
+              {pubCount === 1 ? 'list' : 'lists'} ·{' '}
+              <b className="font-semibold text-ink">{fmtInt(ratings.length)}</b>{' '}
+              {ratings.length === 1 ? 'rating' : 'ratings'} ·{' '}
+              <b className="font-semibold text-ink">{fmtInt(followers)}</b>{' '}
+              {followers === 1 ? 'follower' : 'followers'} ·{' '}
+              <b className="font-semibold text-ink">{fmtInt(following)}</b> following
+            </p>
+            <div className="mt-4 flex gap-2">
+              {own ? (
+                <>
+                  <Link
+                    href="/settings"
+                    className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
+                  >
+                    Edit profile
+                  </Link>
+                  <SignOutButton />
+                </>
+              ) : user ? (
+                <FollowButton userId={profile.id} username={profile.username} following={iFollow} />
+              ) : (
                 <Link
-                  href="/settings"
+                  href="/login"
                   className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
                 >
-                  Edit profile
+                  Sign in to follow
                 </Link>
-                <SignOutButton />
-              </>
-            ) : user ? (
-              <FollowButton userId={profile.id} username={profile.username} following={iFollow} />
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-chip border border-hairline px-4 py-2.5 font-mono text-xs uppercase tracking-wider hover:border-ink/40"
-              >
-                Sign in to follow
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
