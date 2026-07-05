@@ -5,9 +5,11 @@ import { useMemo, useSyncExternalStore } from 'react';
 
 /**
  * VU scroll indicator (aesthetic-synthesis): a waveform of small bars under
- * the top bar. Heights are seeded from the current path — every page, list
- * and record gets its own "waveform" impression — and bars light up cobalt
- * as you scroll through the page.
+ * the top bar. Heights are seeded from the current path — every list gets
+ * its own "waveform" impression — and bars light up cobalt as you scroll
+ * through the page. List pages only (/list/<id>): they're the long, ranked
+ * reads that earn a needle; home, explore, profiles, settings and the
+ * editor render nothing.
  */
 const BARS = 30;
 
@@ -52,6 +54,9 @@ export function VUScroll() {
   const pathname = usePathname();
   const heights = useMemo(() => waveHeights(pathname || '/'), [pathname]);
   const lit = useSyncExternalStore(subscribeScroll, litSnapshot, () => 0);
+
+  // After the hooks (order must be stable): only list detail pages get bars.
+  if (!/^\/list\/[^/]+\/?$/.test(pathname ?? '')) return null;
 
   return (
     <div

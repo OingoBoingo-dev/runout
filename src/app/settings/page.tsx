@@ -25,6 +25,8 @@ export default async function SettingsPage() {
         username={profile.username}
         displayName={profile.display_name}
         bio={profile.bio}
+        avatarUrl={profile.avatar_url}
+        backgroundUrl={profile.background_url ?? null}
       />
     </div>
   );

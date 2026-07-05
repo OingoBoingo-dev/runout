@@ -1,5 +1,7 @@
 export type Kind = 'album' | 'song';
-export type ListStatus = 'draft' | 'published';
+export type ListStatus = 'draft' | 'published' | 'private';
+/** Allowed "Top N" sizes for public lists (0003 migration). */
+export type ListType = 5 | 10 | 20 | 50 | 100 | 1000;
 
 export interface Profile {
   id: string;
@@ -9,6 +11,12 @@ export interface Profile {
   avatar_url: string | null;
   pinned_items: string[];
   created_at: string;
+  /** Preset scheme id (see lib/themes) — null = stock paper. */
+  theme_scheme: string | null;
+  /** Profile-frame id (see lib/borders) — null = plain circle. */
+  border_id: string | null;
+  /** Uploaded profile background (profile-media bucket) — null = derived banner. */
+  background_url: string | null;
 }
 
 export interface CatalogItem {
@@ -36,6 +44,10 @@ export interface List {
   created_at: string;
   updated_at: string;
   published_at: string | null;
+  /** Top-N size — required when published, null on drafts/legacy rows. */
+  list_type: ListType | null;
+  /** Broad genre tags ('all time' is the catch-all) — empty on legacy rows. */
+  genres: string[];
 }
 
 export interface ListEntry {
