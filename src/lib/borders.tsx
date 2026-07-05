@@ -188,8 +188,8 @@ function FrameArt({ id }: { id: string }) {
         <g fill="none">
           {/* 346 deg green wrap; the 14 deg paper gap is centered at 40 deg. */}
           <path d={arc(35.5, 47, 393)} stroke="var(--color-green)" strokeWidth="4" />
-          <path d={line(34.25, 36.75, 47)} stroke={ink} strokeWidth="1.5" />
-          <path d={line(34.25, 36.75, 33)} stroke={ink} strokeWidth="1.5" />
+          <path d={line(34.25, 36.75, 47)} stroke={ink} strokeWidth="2.5" />
+          <path d={line(34.25, 36.75, 33)} stroke={ink} strokeWidth="2.5" />
         </g>
       );
     case 'thirty-three':
