@@ -188,3 +188,60 @@ addendum).
   and/or serve covers from own-domain cached proxy per covers pipeline, or
   precompute data-URIs). Frozen-schema note: any caching table needs owner
   approval; header-cache/edge options don't.
+
+---
+
+## Cycle 3 (2026-07-05) — owner expansion run, wave 1 of 3
+
+**Owner batch:** scroll-indicator scoping; theme overhaul (8 schemes + 4 locked
+ambient, adoption on visited profiles); designed profile borders w/ unlock
+gating; photo/background changing (real uploads approved); homepage split +
+public/private + Top-N + genres; Ordko aggregate lists.
+**Owner decisions:** schema YES (all); private = new status (admin sees all via
+service role); real uploads now; trending = engagement proxy (no view table).
+
+**Theme:** Foundations — schema, uploads, theme system.
+
+- Foreman: migration 0003 written (private status w/ dynamic constraint drop,
+  list_type, genres, theme/border/background cols, gin+partial indexes);
+  types.ts updated; storage bucket `profile-media` created LIVE via service
+  role (public read, 4MB, image mimes). DDL blocked locally (no CLI auth/db
+  password) → owner asked to paste 0003 in dashboard SQL editor.
+- Crate spawned (parallel): border-frame research brief (videogame nameplates →
+  12 original SVG concepts, 4 animated; feeds cycle-4 Lathe-B task).
+
+**Task G — Lathe-A: media uploads.** DONE first pass @ 906142c.
+- actions/media.ts (service client = storage only, lazily built, never exported;
+  profile row writes via user's RLS client; orphan-cleanup on failed update;
+  pending-migration guard for background_url), MediaUpload.tsx, settings wiring,
+  profile render (chosen background replaces derived banner, light blur).
+- eslint/build clean. Runtime e2e deferred to cycle verify (needs auth session
+  + migration).
+
+**Task F — Lathe-B: theme schemes + VUScroll scoping.** IN BUILD.
+- VUScroll → /list/* only. VinylTheme wheel → 12-scheme grid (8 unlocked incl.
+  2 dark, 4 locked ambient @ 25/50/75/100 contributions), lib/themes.ts,
+  AdoptTheme on visited profiles, saveThemeScheme/getThemeAccess actions,
+  ambient layer + keyframes in globals.css (B owns hotspot this cycle).
+
+Strikes: G[0] F[0]. Sequenced file ownership: u/[username]/page.tsx A→B.
+
+**Task F — Lathe-B: DONE first pass @ 8fbff5e.** 12 schemes (8 free incl. 2
+dark, 4 locked ambient 25/50/75/100), WCAG-verified (>=13.9:1 ink/paper all,
+secondary fixed during self-review), browser-verified picker + VU scoping,
+AdoptTheme restore-on-unmount + profile->profile nav, server-side unlock
+re-check in saveThemeScheme.
+
+### Cycle-3 verify (Needle, markup + DB-roundtrip mode)
+- Migration 0003 applied by owner; columns live (probe verified). Bucket
+  round-trip: upload -> public 200 -> cleanup OK.
+- e2e via admin client on demo profile nadia: theme_scheme='after-hours' ships
+  in /u/nadia payload (adoption live); background_url (her pinned Aphex cover)
+  renders in banner @ blur-[3px]. LEFT SET on nadia as a live feature demo.
+- VU bars: 0 on /explore, present on /list/<id>. /settings 307->login.
+  Smoke 5/5 200s. eslint/build clean. verify-dod 27/28 (#27 parked, known).
+- Scorecard: usability 8 / ease 7 / intuitiveness 7 / aesthetics 8. No axis <6,
+  none regressed. SHIP.
+
+Strikes: G[0] F[0]. Usage: 2 resumes + 1 Crate spawn (border brief delivered,
+feeds cycle 4).
