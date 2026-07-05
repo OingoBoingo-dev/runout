@@ -27,7 +27,8 @@ export async function generateMetadata({
   const list = listRow as unknown as
     | { title: string; status: string; profiles: { username: string } | null }
     | null;
-  if (!list || list.status === 'draft') return {};
+  // Drafts and private lists never unfurl (RLS already hides them from others).
+  if (!list || list.status !== 'published') return {};
 
   const username = list.profiles?.username ?? 'someone';
   const title = list.title;
@@ -96,9 +97,36 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="mb-6">
         <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.2em] text-cobalt">
-          {list.status === 'draft' ? 'Draft list — only you can see this' : 'List'} · {list.kind}s
+          {list.status === 'draft'
+            ? 'Draft list — only you can see this'
+            : list.status === 'private'
+              ? 'Private list'
+              : 'List'}{' '}
+          · {list.kind}s
         </p>
         <h1 className="font-display text-3xl sm:text-4xl break-words">{list.title}</h1>
+        {(list.list_type != null || list.status === 'private' || (list.genres ?? []).length > 0) && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {list.list_type != null && (
+              <span className="rounded-full bg-yellow px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-ink">
+                Top {fmtInt(list.list_type)}
+              </span>
+            )}
+            {list.status === 'private' && (
+              <span className="rounded-full bg-ink px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.11em] text-paper">
+                private — only you
+              </span>
+            )}
+            {(list.genres ?? []).map(g => (
+              <span
+                key={g}
+                className="rounded-full border border-hairline px-3 py-1 font-mono text-[10px] uppercase tracking-[0.11em] text-secondary"
+              >
+                {g}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-2.5">
           <Link
             href={`/u/${owner.username}`}

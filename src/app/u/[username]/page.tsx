@@ -7,6 +7,7 @@ import { FollowButton } from '@/components/FollowButton';
 import { ProfileBanner } from '@/components/ProfileBanner';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Stars } from '@/components/Stars';
+import { AvatarFrame } from '@/lib/borders';
 import { getProfileByUsername } from '@/lib/data';
 import { fmtCount, fmtInt, fmtRating, timeAgo } from '@/lib/format';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -163,22 +164,26 @@ export default async function ProfilePage({
           <ProfileBanner covers={bannerCovers} />
         )}
         <div className={`flex flex-wrap items-start gap-5${hasBanner ? ' relative p-4 sm:p-5' : ''}`}>
-          {profile.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.avatar_url}
-              alt=""
-              loading="lazy"
-              className="h-[76px] w-[76px] flex-none rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden
-              className="flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full bg-ink font-mono text-2xl font-semibold text-paper"
-            >
-              {monogram}
-            </span>
-          )}
+          {/* border_id null/unknown → AvatarFrame renders the plain 76px
+              circle exactly as before; a frame draws its annulus around it. */}
+          <AvatarFrame borderId={profile.border_id} size={76}>
+            {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt=""
+                loading="lazy"
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="flex h-full w-full items-center justify-center rounded-full bg-ink font-mono text-2xl font-semibold text-paper"
+              >
+                {monogram}
+              </span>
+            )}
+          </AvatarFrame>
           <div className="min-w-[220px] flex-1">
             <h1 className="font-display text-3xl">{profile.display_name || profile.username}</h1>
             <p className="mt-1 font-mono text-[13px] text-secondary">@{profile.username}</p>

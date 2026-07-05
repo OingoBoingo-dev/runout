@@ -245,3 +245,50 @@ re-check in saveThemeScheme.
 
 Strikes: G[0] F[0]. Usage: 2 resumes + 1 Crate spawn (border brief delivered,
 feeds cycle 4).
+
+---
+
+## Cycle 4 (2026-07-05) — owner expansion run, wave 2 of 3
+
+**Theme:** Publish decisions + profile frames.
+
+**Task H — Lathe-A: publish flow.** DONE @ fe7f7c9 (+ 6a78aaa edit-prefill
+amendment; no strike — my manifest omission). PublishSheet popup (portaled):
+step1 public/private, step2 Top-N (5/10/20/50/100/1000, chips below entry count
+disabled) + genres (32 broad tags, 'all time' first, max 3, ≥1 required).
+validate.ts superRefine enforces published => type+genre+entries≤N server-side.
+list page badges: yellow "Top N" (rank), ink "private — only you", hairline
+genre chips. private status inert to publish trigger (fires only on 'published').
+
+**Task I — Lathe-B: 12 avatar frames + unlock picker.** Built via build+verify
+WORKFLOW (5 agents) after the prior Fable-5 run died on a spend limit mid-task.
+- Build @ 4520a82 (salvaged the partial borders.tsx draft; all 12 audited to
+  Crate's exact geometry). Foreman polish @ 64f29d4 (still-sealed cap 2.5u).
+- Adversarial verify (4 lenses): security PASS, non-regression PASS, geometry
+  ISSUES (2 minor: still-sealed cap weight [fixed]; crop-marks 0.5u annulus
+  overshoot [left — explicit per-frame r=37.5/stroke-3 overrides the general
+  bound]), motion-design ISSUES (1 minor: cobalt selection ring on accented
+  tiles [left — cobalt=interactive chrome, settings-only, matches theme picker]).
+- Foreman visual QA: rendered all 12 live from the app into a contact sheet,
+  eyeballed geometry — all correct; noted adapter-45 lugs at 0/120/240° vs
+  spec 90/210/330° (cosmetically identical for 3 even lugs; left).
+
+### Cycle-4 verify (Needle + DB-roundtrip + visual)
+- eslint/build clean; verify-dod 27/28 (#27 parked, known).
+- e2e via admin client: border 'picture-disc'→ profile renders AvatarFrame SVG;
+  list list_type=20+genres → yellow "Top 20" + hairline genre chips render;
+  PRIVATE list → anon GET 404 (RLS holds, same policy as drafts). settings +
+  lists/new gated (307). Smoke green.
+- NOT click-tested (no browser): PublishSheet popup interaction, BorderPicker
+  lock tooltips — verified by code + schema + rendered output.
+- Scorecard: usability 8 / ease 7 / intuitiveness 8 / aesthetics 8. No axis <6,
+  none regressed. SHIP.
+
+### ROADMAP adds (from verify)
+- Project-wide: map unexpected DB errors to generic client messages (updateProfile
+  /saveThemeScheme/saveBorder all surface raw error.message — pre-existing).
+- Consider Crate's steeper frame ladder (0/25/.../175 + animated 200-400) once
+  the user base grows; currently 8 free + 4 locked per owner "same as themes".
+
+Strikes: H[0] I[0] (workflow build clean first pass). Usage: Crate2 (border
+brief) + Lathe-A + a 5-agent verify workflow.
