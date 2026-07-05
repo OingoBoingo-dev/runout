@@ -99,3 +99,79 @@ Strikes: A[1] B[0]. Shared hotspots (globals.css/layout/lib) READ-ONLY for both.
   OG PNG 200 (rendered 2-cover fallback layout on prod — some cover fetches
   timed out on Vercel runtime; no void, graceful). Banner markup live.
 - Future cycles: ship step = merge to main, push, then CLI prod deploy.
+
+---
+
+## Cycle 2 (2026-07-05)
+
+**Theme:** Editor delight + taste that travels, part 2.
+Crate: not spawned (ROADMAP holds 5 candidates; cost rule). Sources: cycle-1
+proposal bullets 1 & 4.
+
+### Task cards (2 tasks, disjoint manifests, schema-free)
+
+**Task C — Lathe-B (interaction/motion): Reorder that feels good everywhere.**
+North Star 1 (hero act). ROADMAP #1.
+- Today: grip drag is desktop-only (HTML5 DnD ignores touch), no position-jump,
+  no motion feedback on reorder.
+- Goal: (1) tap position number → type target → Enter → row jumps there
+  (mobile + long-list killer feature); (2) reorder works on touch (pointer-based
+  drag or equivalent); (3) subtle settle animation on reorder (FLIP/transform,
+  respects prefers-reduced-motion). Keep arrows + existing drag semantics.
+- Manifest (exclusive): EDIT `src/components/ListBuilder.tsx` only.
+- Accept: eslint+build pass; position-jump works by keyboard alone; touch path
+  stated + implemented; no new deps; cobalt=interactive only; no action/schema
+  changes (reorder stays client-side pre-save).
+
+**Task D — Lathe-A (route/data): Profile OG card.** North Star 2+3. ROADMAP #4.
+- Goal: profile links unfurl like list links do — reuse the cycle-1
+  ImageResponse pattern (inline cover bytes as data: URIs, explicit rows).
+- Manifest (exclusive): NEW `src/app/u/[username]/opengraph-image.tsx`,
+  EDIT `src/app/u/[username]/page.tsx` (add generateMetadata only — do not
+  touch the page body/queries).
+- Card content: display name, @username, list/rating/follower counts, mosaic
+  from pinned covers (fallback: newest published list covers; fallback:
+  branded no-cover panel). Draft lists never leak.
+- Accept: eslint+build pass; GET /u/nadia/opengraph-image → 200 PNG, visually
+  verified (no voids); /u/nadia head has og:title+og:image; page body untouched.
+
+Strikes: C[0] D[0]. ListBuilder/u-page exclusive to their writers; all lib/*,
+globals.css, layout.tsx READ-ONLY. Ship = merge→push→CLI prod deploy (cycle-1
+addendum).
+
+### Cycle-2 verify + scorecard (Needle; markup + OG-render mode)
+- Usability 8/10 — profile OG 200 + meta complete; editor keyboard path
+  (position-button → numeric input → Enter) fully specified & lint/type-clean;
+  auth gate intact. Editor NOT hand-walked (auth + no browser in session) —
+  compensated by Lathe-B's index-math walkthrough (verified sound: splice
+  remove-then-insert is direction-agnostic) + verify-dod list flows.
+- Ease of use 7/10 — position jump collapses N taps → 1 type on long lists;
+  touch drag unblocks 375px reordering entirely.
+- Intuitiveness 7/10 — tappable rank number is a mild discoverability bet;
+  aria-labels strong ("Position N of M — change position for <title>").
+- Aesthetics 8/10 — profile OG card visually verified (wordmark, yellow counts
+  pill, edge-to-edge mosaic, zero voids; runtime cover-fetch variance handled
+  gracefully). FLIP settle unverified visually; reduced-motion respected.
+- No axis <6, none regressed vs cycle 1. SHIP OK.
+- Known limitation (logged, not blocking): no viewport auto-scroll during
+  touch-drag on very long lists → ROADMAP candidate.
+
+### Gates
+- eslint clean; build clean (both OG routes registered); verify-dod 27/28 —
+  #27 same pre-existing saturated-cache defect (75→75), stays parked.
+
+### Shipped
+- Task C: editor reorder — position jump, pointer-events drag (touch+mouse),
+  FLIP settle motion. 1 file, +237/-55. First-pass accept.
+- Task D: profile OG card + generateMetadata. 2 files, +315. First-pass accept.
+- Strikes: C[0] D[0]. Usage: 0 new spawns (both writers resumed), Crate skipped.
+
+### Next-cycle proposal (from written material only)
+1. Signed-out landing static slice (welcome epic, slice 1) — Crate #5 grid as
+   hero; the front door still sells nothing (Needle, both cycles).
+2. Create-CTA in context for signed-in users (cycle-1 friction, still open).
+3. Inline reorder polish: viewport auto-scroll during touch drag (Lathe-B's
+   flagged limitation).
+4. Repair verify-dod #27 (rotate query term or assert idempotent upsert).
+5. Launch checklist opener: password reset page (schema-free, Supabase Auth
+   built-in flow).
