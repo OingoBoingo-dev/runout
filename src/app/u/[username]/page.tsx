@@ -122,7 +122,8 @@ export default async function ProfilePage({
       );
     }
   }
-  const hasBanner = bannerCovers.some(Boolean);
+  const backgroundUrl = profile.background_url ?? null;
+  const hasBanner = !!backgroundUrl || bannerCovers.some(Boolean);
 
   const monogram =
     (profile.display_name || profile.username)
@@ -136,7 +137,27 @@ export default async function ProfilePage({
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       <div className="relative">
-        <ProfileBanner covers={bannerCovers} />
+        {backgroundUrl ? (
+          /* Chosen background image: barely blurred (it's deliberate, unlike the
+             derived cover strip), same paper-wash gradients for ink legibility. */
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-[118px] overflow-hidden rounded-card sm:h-[150px]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={backgroundUrl}
+              alt=""
+              aria-hidden
+              loading="lazy"
+              className="h-full w-full scale-105 object-cover opacity-80 blur-[3px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/70 to-paper/25" />
+            <div className="absolute inset-0 bg-gradient-to-r from-paper/80 via-paper/35 to-transparent" />
+          </div>
+        ) : (
+          <ProfileBanner covers={bannerCovers} />
+        )}
         <div className={`flex flex-wrap items-start gap-5${hasBanner ? ' relative p-4 sm:p-5' : ''}`}>
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
