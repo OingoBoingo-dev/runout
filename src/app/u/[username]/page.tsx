@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AdoptTheme } from '@/components/AdoptTheme';
 import { Cover } from '@/components/Cover';
 import { FollowButton } from '@/components/FollowButton';
 import { ProfileBanner } from '@/components/ProfileBanner';
@@ -136,6 +137,9 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
+      {/* Visitors adopt this profile's scheme while here; undefined until
+          migration 0003 lands → null → no-op. */}
+      <AdoptTheme scheme={profile.theme_scheme ?? null} />
       <div className="relative">
         {backgroundUrl ? (
           /* Chosen background image: barely blurred (it's deliberate, unlike the
