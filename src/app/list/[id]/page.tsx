@@ -1,12 +1,45 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CommentForm } from '@/components/CommentForm';
+import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { Cover } from '@/components/Cover';
 import { LikeButton } from '@/components/LikeButton';
 import { Rank } from '@/components/Rank';
 import { fmtCount, fmtInt, fmtYear, timeAgo } from '@/lib/format';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { CatalogItem, Comment, List, Profile } from '@/lib/types';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return {};
+
+  const supabase = await supabaseServer();
+  const { data: listRow } = await supabase
+    .from('lists')
+    .select('title, status, profiles!lists_owner_fkey(username)')
+    .eq('id', id)
+    .maybeSingle();
+  const list = listRow as unknown as
+    | { title: string; status: string; profiles: { username: string } | null }
+    | null;
+  if (!list || list.status === 'draft') return {};
+
+  const username = list.profiles?.username ?? 'someone';
+  const title = list.title;
+  const description = `A ranked list by @${username} on Ordko`;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'article' },
+    twitter: { card: 'summary_large_image', title, description },
+  };
+}
 
 export default async function ListPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -86,6 +119,7 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
             count={likeCount('list', list.id)}
             disabled={!user}
           />
+          <CopyLinkButton url={`/list/${list.id}`} />
           {isOwner && (
             <Link
               href={`/lists/${list.id}/edit`}
