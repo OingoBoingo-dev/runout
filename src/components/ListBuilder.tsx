@@ -1,7 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { saveList, setListStatus } from '@/app/actions/lists';
 import { Cover } from '@/components/Cover';
 import { fmtInt, fmtPos, fmtYear } from '@/lib/format';
@@ -108,36 +115,185 @@ export function ListBuilder(props: {
     ]);
   };
 
-  const move = (i: number, dir: -1 | 1) => {
-    setEntries(es => {
-      const j = i + dir;
-      if (j < 0 || j >= es.length) return es;
-      const next = es.slice();
-      [next[i], next[j]] = [next[j], next[i]];
-      return next;
-    });
+  // ---- reorder core --------------------------------------------------------
+  // Row DOM nodes keyed by mbid (stable across reorders) — used for FLIP
+  // measurement and drag target math.
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  // Row tops captured immediately before a reorder commits; consumed once by
+  // the FLIP effect below. Null = no settle animation pending.
+  const flipTops = useRef<Map<string, number> | null>(null);
+
+  const captureRects = () => {
+    const tops = new Map<string, number>();
+    rowRefs.current.forEach((node, key) => tops.set(key, node.getBoundingClientRect().top));
+    flipTops.current = tops;
   };
 
-  const remove = (i: number) => setEntries(es => es.filter((_, idx) => idx !== i));
-
-  // drag and drop (grip-initiated)
-  const dragIdx = useRef<number | null>(null);
-  const [overIdx, setOverIdx] = useState<number | null>(null);
-  const [draggable, setDraggable] = useState<number | null>(null);
-
-  const drop = (to: number) => {
-    const from = dragIdx.current;
-    dragIdx.current = null;
-    setOverIdx(null);
-    setDraggable(null);
-    if (from === null || from === to) return;
+  /** Remove `from`, re-insert so the entry lands at final index `to`.
+   *  Remove-then-insert makes `to` direction-agnostic: splicing into the
+   *  already-shortened array places the item at exactly index `to`. */
+  const applyMove = (from: number, to: number) =>
     setEntries(es => {
+      if (from === to || from < 0 || to < 0 || from >= es.length || to >= es.length) return es;
       const next = es.slice();
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
       return next;
     });
+
+  const moveTo = (from: number, to: number) => {
+    if (from === to) return;
+    captureRects();
+    applyMove(from, to);
   };
+
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= entries.length) return;
+    moveTo(i, j);
+  };
+
+  const remove = (i: number) => setEntries(es => es.filter((_, idx) => idx !== i));
+
+  // Settle motion (FLIP): after a reorder commits, each displaced row starts
+  // at an inverted translateY from its old slot and eases to identity. Reads
+  // are batched before writes (one forced reflow total) so 100+ entry lists
+  // don't thrash layout. Skipped entirely under prefers-reduced-motion.
+  useLayoutEffect(() => {
+    const prev = flipTops.current;
+    if (!prev || !entries.length) return;
+    flipTops.current = null;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const moved: [HTMLDivElement, number][] = [];
+    rowRefs.current.forEach((node, key) => {
+      // read phase
+      const before = prev.get(key);
+      if (before === undefined) return;
+      const dy = before - node.getBoundingClientRect().top;
+      if (dy) moved.push([node, dy]);
+    });
+    if (!moved.length) return;
+    for (const [node, dy] of moved) {
+      // write phase: park rows at their old positions
+      node.style.transition = 'none';
+      node.style.transform = `translateY(${dy}px)`;
+    }
+    void document.body.offsetHeight; // single forced reflow commits start state
+    for (const [node] of moved) {
+      node.style.transition = 'transform 180ms var(--ease-blanket)';
+      node.style.transform = '';
+    }
+    const timer = setTimeout(() => {
+      for (const [node] of moved) node.style.transition = '';
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [entries]);
+
+  // Touch + mouse reorder via Pointer Events, grip-initiated. The grip
+  // captures the pointer; only the lifted row is transformed (layout of the
+  // rest never changes mid-drag), so row midpoints measured at lift stay
+  // valid for computing the drop target.
+  const drag = useRef<{
+    from: number;
+    to: number; // final index if dropped now
+    startY: number;
+    node: HTMLDivElement;
+    mids: number[]; // row vertical midpoints at lift, in entry order
+  } | null>(null);
+  // Insertion cue: gap index 0..entries.length (line above row g; g === length
+  // means below the last row). Null = hidden.
+  const [dropGap, setDropGap] = useState<number | null>(null);
+
+  const liftStyles = (node: HTMLDivElement) => {
+    node.style.zIndex = '10';
+    node.style.position = 'relative';
+    node.style.background = 'var(--color-card)';
+    node.style.boxShadow = '5px 5px 0 rgba(22, 21, 15, 0.14), 5px 7px 14px rgba(22, 21, 15, 0.12)';
+    node.style.transition = 'none';
+  };
+  const dropStyles = (node: HTMLDivElement) => {
+    node.style.zIndex = '';
+    node.style.position = '';
+    node.style.background = '';
+    node.style.boxShadow = '';
+    node.style.transition = '';
+    node.style.transform = '';
+  };
+
+  const gripDown = (i: number) => (ev: ReactPointerEvent<HTMLSpanElement>) => {
+    if (drag.current || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
+    const node = rowRefs.current.get(entries[i].mbid);
+    if (!node) return;
+    ev.preventDefault();
+    ev.currentTarget.setPointerCapture(ev.pointerId);
+    const mids = entries.map(x => {
+      const r = rowRefs.current.get(x.mbid)!.getBoundingClientRect();
+      return r.top + r.height / 2;
+    });
+    drag.current = { from: i, to: i, startY: ev.clientY, node, mids };
+    liftStyles(node);
+  };
+
+  const gripMove = (ev: ReactPointerEvent<HTMLSpanElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    d.node.style.transform = `translateY(${ev.clientY - d.startY}px)`;
+    // Final index = how many OTHER rows sit above the pointer.
+    let to = 0;
+    for (let j = 0; j < d.mids.length; j++) {
+      if (j !== d.from && d.mids[j] < ev.clientY) to++;
+    }
+    if (to !== d.to) {
+      d.to = to;
+      // Landing below the origin means the item drops under row `to`, so the
+      // visual gap sits one row lower than the final index.
+      setDropGap(to === d.from ? null : to + (to > d.from ? 1 : 0));
+    }
+  };
+
+  const gripEnd = (commit: boolean) => (ev: ReactPointerEvent<HTMLSpanElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    drag.current = null;
+    setDropGap(null);
+    try {
+      ev.currentTarget.releasePointerCapture(ev.pointerId);
+    } catch {}
+    if (commit && d.to !== d.from) {
+      captureRects(); // reads the lifted position — FLIP settles from the drop point
+      dropStyles(d.node);
+      applyMove(d.from, d.to);
+    } else {
+      // No move: ease the row back into its slot.
+      const node = d.node;
+      node.style.transition = 'transform 180ms var(--ease-blanket)';
+      node.style.transform = '';
+      setTimeout(() => dropStyles(node), 200);
+    }
+  };
+
+  // Position jump: tap/click (or Enter on) the position number → numeric
+  // input; Enter/blur commits, Escape cancels. Clamped to 1..length.
+  const [editPos, setEditPos] = useState<number | null>(null);
+  const [posDraft, setPosDraft] = useState('');
+  const refocus = useRef<string | null>(null); // mbid whose pos button re-takes focus (keyboard exits only)
+
+  const commitJump = (from: number) => {
+    setEditPos(null);
+    const n = parseInt(posDraft, 10);
+    if (!Number.isFinite(n)) return; // invalid → no-op
+    const to = Math.min(Math.max(n, 1), entries.length) - 1;
+    moveTo(from, to); // no-ops when target === current
+  };
+
+  useEffect(() => {
+    if (editPos !== null || !refocus.current) return;
+    const btn = rowRefs.current
+      .get(refocus.current)
+      ?.querySelector<HTMLButtonElement>('button[data-pos-btn]');
+    refocus.current = null;
+    btn?.focus();
+  }, [editPos]);
 
   const persist = (nextStatus: ListStatus) => {
     setError(null);
@@ -353,7 +509,7 @@ export function ListBuilder(props: {
 
         <section>
           <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.16em] text-secondary">
-            Ranked entries — drag the grip or use the arrows
+            Ranked entries — drag the grip, tap a position, or use the arrows
           </h2>
           <div className="rounded-card border border-hairline bg-card py-1 text-ink">
             {entries.length === 0 && (
@@ -367,37 +523,26 @@ export function ListBuilder(props: {
             {entries.map((e, i) => (
               <div
                 key={e.mbid}
-                draggable={draggable === i}
-                onDragStart={ev => {
-                  dragIdx.current = i;
-                  ev.dataTransfer.effectAllowed = 'move';
-                  try {
-                    ev.dataTransfer.setData('text/plain', '');
-                  } catch {}
-                }}
-                onDragOver={ev => {
-                  ev.preventDefault();
-                  setOverIdx(i);
-                }}
-                onDragLeave={() => setOverIdx(v => (v === i ? null : v))}
-                onDrop={ev => {
-                  ev.preventDefault();
-                  drop(i);
-                }}
-                onDragEnd={() => {
-                  dragIdx.current = null;
-                  setOverIdx(null);
-                  setDraggable(null);
+                ref={node => {
+                  if (node) rowRefs.current.set(e.mbid, node);
+                  else rowRefs.current.delete(e.mbid);
                 }}
                 className={`flex items-start gap-2.5 border-b border-hairline px-3 py-3 last:border-0 ${
-                  overIdx === i ? 'shadow-[inset_0_3px_0_var(--color-cobalt)]' : ''
+                  dropGap === i
+                    ? 'shadow-[inset_0_3px_0_var(--color-cobalt)]'
+                    : dropGap === entries.length && i === entries.length - 1
+                      ? 'shadow-[inset_0_-3px_0_var(--color-cobalt)]'
+                      : ''
                 }`}
               >
                 <span
                   title="Drag to reorder"
-                  onMouseDown={() => setDraggable(i)}
-                  onMouseUp={() => setDraggable(null)}
-                  className="mt-3 flex-none cursor-grab px-1.5 py-2 text-secondary active:cursor-grabbing"
+                  onPointerDown={gripDown(i)}
+                  onPointerMove={gripMove}
+                  onPointerUp={gripEnd(true)}
+                  onPointerCancel={gripEnd(false)}
+                  onContextMenu={ev => ev.preventDefault()}
+                  className="mt-2 flex-none cursor-grab touch-none select-none px-2 py-3 text-secondary active:cursor-grabbing"
                   aria-hidden
                 >
                   <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
@@ -409,15 +554,52 @@ export function ListBuilder(props: {
                     <circle cx="7.5" cy="13.5" r="1.6" />
                   </svg>
                 </span>
-                <span className="mt-1 flex min-w-[44px] flex-none flex-col items-center">
-                  <b
-                    className={`font-display text-xl font-normal leading-none tabular-nums ${
-                      i < 3 ? 'text-cobalt' : ''
-                    }`}
-                  >
-                    {fmtPos(i + 1, entries.length)}
-                  </b>
-                  <span className="mt-1 font-mono text-[9px] uppercase tracking-[0.18em] text-secondary">
+                <span className="flex min-w-[44px] flex-none flex-col items-center">
+                  {editPos === i ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={3}
+                      value={posDraft}
+                      aria-label={`New position for ${e.title}, 1 to ${fmtInt(entries.length)}`}
+                      onFocus={ev => ev.currentTarget.select()}
+                      onChange={ev => setPosDraft(ev.currentTarget.value.replace(/\D/g, ''))}
+                      onKeyDown={ev => {
+                        if (ev.key === 'Enter') {
+                          ev.preventDefault();
+                          refocus.current = e.mbid;
+                          commitJump(i);
+                        } else if (ev.key === 'Escape') {
+                          refocus.current = e.mbid;
+                          setEditPos(null);
+                        }
+                      }}
+                      onBlur={() => commitJump(i)}
+                      className="h-11 w-11 rounded-chip border border-cobalt bg-ink/5 text-center font-display text-lg tabular-nums focus:outline-none"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      data-pos-btn
+                      onClick={() => {
+                        setPosDraft(String(i + 1));
+                        setEditPos(i);
+                      }}
+                      aria-label={`Position ${fmtInt(i + 1)} of ${fmtInt(entries.length)} — change position for ${e.title}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-chip hover:bg-ink/5 focus-visible:bg-ink/5"
+                    >
+                      <b
+                        className={`font-display text-xl font-normal leading-none tabular-nums ${
+                          i < 3 ? 'text-cobalt' : ''
+                        }`}
+                      >
+                        {fmtPos(i + 1, entries.length)}
+                      </b>
+                    </button>
+                  )}
+                  <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-secondary">
                     pos
                   </span>
                 </span>
