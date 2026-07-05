@@ -175,3 +175,16 @@ addendum).
 4. Repair verify-dod #27 (rotate query term or assert idempotent upsert).
 5. Launch checklist opener: password reset page (schema-free, Supabase Auth
    built-in flow).
+
+### Cycle-2 ship addendum
+- Deployed runout-ovgups85a READY; prod smoke green (home 307, explore/list/
+  profile 200, og:title live, profile OG 200).
+- DEGRADATION (not a break): on Vercel runtime the profile OG rendered the
+  "No covers yet" fallback — all 4 cover fetches exceeded the 4s budget
+  (coverartarchive 307→archive.org cold latency). Locally 2-4 covers land.
+  Same weakness on list OG (cycle 1 showed 2/4 on prod). Valid branded PNG
+  either way; page + metadata unaffected. → PROMOTED to next-cycle bullet #1:
+  OG cover-fetch reliability (longer budget via streamed parallel fetch,
+  and/or serve covers from own-domain cached proxy per covers pipeline, or
+  precompute data-URIs). Frozen-schema note: any caching table needs owner
+  approval; header-cache/edge options don't.
