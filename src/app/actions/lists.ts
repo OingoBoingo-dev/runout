@@ -61,6 +61,8 @@ export async function saveList(raw: unknown): Promise<SaveListResult> {
         description: input.description,
         kind: input.kind,
         status: input.status,
+        list_type: input.list_type,
+        genres: input.genres,
       })
       .eq('id', listId);
     if (error) return { error: friendly(error.message) };
@@ -73,6 +75,8 @@ export async function saveList(raw: unknown): Promise<SaveListResult> {
         description: input.description,
         kind: input.kind,
         status: input.status,
+        list_type: input.list_type,
+        genres: input.genres,
       })
       .select('id')
       .single();
@@ -98,20 +102,20 @@ export async function saveList(raw: unknown): Promise<SaveListResult> {
   return { id: listId! };
 }
 
+/**
+ * Quick visibility drop: draft or private only. Publishing always goes
+ * through saveList, where the type/genre/entry-count rules are enforced.
+ */
 export async function setListStatus(
   listId: string,
-  status: 'draft' | 'published',
+  status: 'draft' | 'private',
 ): Promise<SaveListResult> {
+  if (status !== 'draft' && status !== 'private') {
+    return { error: 'Publishing goes through the publish flow.' };
+  }
   const auth = await requireUser();
   if ('error' in auth) return auth;
   const { supabase, user } = auth;
-  if (status === 'published') {
-    const { count } = await supabase
-      .from('list_entries')
-      .select('position', { count: 'exact', head: true })
-      .eq('list_id', listId);
-    if (!count) return { error: 'Add at least one entry before publishing.' };
-  }
   const { error } = await supabase
     .from('lists')
     .update({ status })
