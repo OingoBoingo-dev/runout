@@ -3,15 +3,20 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { updateProfile } from '@/app/actions/profile';
+import { MediaUpload } from '@/components/MediaUpload';
 
 export function SettingsForm({
   username,
   displayName,
   bio,
+  avatarUrl,
+  backgroundUrl,
 }: {
   username: string;
   displayName: string;
   bio: string;
+  avatarUrl: string | null;
+  backgroundUrl: string | null;
 }) {
   const router = useRouter();
   const [name, setName] = useState(displayName);
@@ -25,6 +30,17 @@ export function SettingsForm({
     'w-full rounded-chip border border-hairline bg-ink/5 px-4 py-3 text-ink placeholder:text-secondary/60 focus:border-cobalt focus:outline-none';
 
   return (
+    <div className="space-y-6">
+      <section className="rounded-card border border-hairline bg-card p-6 text-ink">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+          Profile media
+        </p>
+        <div className="space-y-5">
+          <MediaUpload kind="avatar" currentUrl={avatarUrl} />
+          <MediaUpload kind="background" currentUrl={backgroundUrl} />
+        </div>
+      </section>
+
     <form
       className="rounded-card border border-hairline bg-card p-6 text-ink"
       onSubmit={e => {
@@ -73,5 +89,6 @@ export function SettingsForm({
         </button>
       </div>
     </form>
+    </div>
   );
 }
