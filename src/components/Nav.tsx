@@ -83,6 +83,12 @@ export async function Nav() {
             >
               Explore
             </Link>
+            <Link
+              href="/ordko"
+              className="font-mono text-xs uppercase tracking-widest text-secondary hover:text-cobalt"
+            >
+              Ordko
+            </Link>
             {user ? (
               <>
                 <Link
