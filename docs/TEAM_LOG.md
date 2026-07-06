@@ -292,3 +292,48 @@ WORKFLOW (5 agents) after the prior Fable-5 run died on a spend limit mid-task.
 
 Strikes: H[0] I[0] (workflow build clean first pass). Usage: Crate2 (border
 brief) + Lathe-A + a 5-agent verify workflow.
+
+---
+
+## Cycle 5 (2026-07-05) — owner expansion run, wave 3 of 3 (FINAL)
+
+**Theme:** Discovery — homepage split + Ordko aggregate lists. Closes the owner's
+6-bullet batch. Owner directive: ship these, then PAUSE (override the prompt's
+never-stop clause) — no next-cycle, no lingering agents.
+
+**Task K — Ordko aggregate lists.** Built via build+verify WORKFLOW (4 agents).
+- Build @ 9fe515b (getOrdkoList/getOrdkoBuckets: Σ(1000-position) per item over
+  PUBLISHED lists in a (kind,genre) bucket; /ordko browsable page w/ searchParams
+  toggles; OrdkoChart). Foreman polish @ c6e0ba1 (skip catalog-less rows;
+  deterministic pre-window sort).
+- Adversarial verify: privacy PASS (no draft/private leak — critical), perf PASS,
+  algorithm ISSUES (2 minor, both fixed/hardened). Builder self-verified /ordko
+  renders rows + empty state.
+
+**Task J — homepage split.** DONE @ 6d25d64 (single agent + Foreman render QA).
+- page.tsx rewritten: signed-out redirect REMOVED (anon / now 200). 6 sections:
+  hero (sells identity to signed-out) / following feed (signed-in) / top ranked
+  albums+songs mini-charts / trending categories (genre chips from hot lists) /
+  trending lists (getTrending) / Ordko teaser (flagship compiled chart + link).
+  Nav gains an "Ordko" desktop link. HomeSections.tsx presentational.
+- Graceful: Top Songs mini-chart hides (no song lists seeded yet); appears when one exists.
+
+### Cycle-5 verify (Needle + render)
+- eslint/build clean; verify-dod 27/28 (#27 parked). anon / -> 200 (redirect gone);
+  all 6 section headings + hero + 12 chart item-links + 3 category chips + Ordko
+  teaser confirmed in rendered HTML. /ordko + /ordko?kind=album&genre=all time&n=20
+  -> 200 with "Compiled from" rows. Nav Ordko link present. Smoke green.
+- Scorecard: usability 8 / ease 7 / intuitiveness 8 / aesthetics 8. No axis <6,
+  none regressed. SHIP.
+
+Strikes: K[0] J[0]. Usage: 1 build+verify workflow (4 agents) + 1 home agent.
+
+## OWNER BATCH COMPLETE (6/6)
+1. Scroll indicator scoped to lists only ✓ (c3)
+2. Theme changer -> 12 schemes (8 free + 4 locked ambient) + adoption ✓ (c3)
+3. Profile borders (12 game-inspired frames) + unlock gating ✓ (c4)
+4. Profile photo + background uploads ✓ (c3)
+5. Homepage split + publish popup (public/private, Top-N, genres) ✓ (c4+c5)
+6. Ordko aggregate lists ✓ (c5)
+
+**PAUSED per owner. No next cycle. Team released.**
