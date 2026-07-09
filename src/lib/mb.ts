@@ -191,9 +191,12 @@ async function popularityFor(mbids: string[]): Promise<Map<string, number>> {
   const pop = new Map<string, number>();
   if (!mbids.length) return pop;
   const admin = supabaseAdmin();
+  // Only PUBLISHED lists count toward popularity (mirrors chart_view); the inner
+  // join drops entries in draft/private lists. Degrades to no-boost on error.
   const { data, error } = await admin
     .from('list_entries')
-    .select('item_mbid')
+    .select('item_mbid, lists!inner(status)')
+    .eq('lists.status', 'published')
     .in('item_mbid', mbids);
   if (error || !data) return pop;
   for (const row of data as { item_mbid: string }[]) {
@@ -204,20 +207,24 @@ async function popularityFor(mbids: string[]): Promise<Map<string, number>> {
 
 export async function searchMB(kind: Kind, q: string): Promise<NormalizedItem[]> {
   const enc = encodeURIComponent(q);
-  // Fetch MORE candidates (25) than we return so re-ranking + dedup has room.
+  // Fetch a WIDE candidate window (100) so canonical records MB's text search
+  // under-ranks (e.g. Michael Jackson's "Thriller") still enter the set and can
+  // be surfaced by release-count / popularity. One MB call; ranking trims to 10.
   const raw =
     kind === 'album'
       ? ((await mbFetch<{ 'release-groups'?: MBReleaseGroup[] }>(
-          `/release-group?query=${enc}&fmt=json&limit=25`,
+          `/release-group?query=${enc}&fmt=json&limit=100`,
         ))['release-groups'] ?? []).map(fromReleaseGroup)
       : ((await mbFetch<{ recordings?: MBRecording[] }>(
-          `/recording?query=${enc}&fmt=json&limit=25`,
+          `/recording?query=${enc}&fmt=json&limit=100`,
         )).recordings ?? []).map(fromRecording);
 
-  // Relevance re-rank + dedup using our own popularity signal.
-  const popularity = await popularityFor(raw.map(i => i.mbid));
+  // Tag each with its MB result position (a canonical prior for songs), then
+  // relevance re-rank + dedup using our own popularity signal.
+  const withRank = raw.map((it, i) => ({ ...it, mbRank: i })) as (NormalizedItem & RankCandidate)[];
+  const popularity = await popularityFor(withRank.map(i => i.mbid));
   const ranked = rankAndDedup<NormalizedItem & RankCandidate>(
-    raw as (NormalizedItem & RankCandidate)[],
+    withRank,
     q,
     { kind: kind === 'album' ? 'album' : 'song', popularity },
     10,

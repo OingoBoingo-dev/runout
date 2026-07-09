@@ -114,9 +114,6 @@ export default async function SearchPage({
                     {[a.type, a.disambiguation || a.area].filter(Boolean).join(' · ') || 'artist'}
                   </span>
                 </span>
-                <span className="flex-none rounded-chip border border-hairline px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-secondary">
-                  artist
-                </span>
               </Link>
             ))}
           </div>

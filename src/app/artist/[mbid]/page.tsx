@@ -88,7 +88,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ mbid: s
                     {rg.title}
                   </p>
                   <p className="truncate font-mono text-[11px] tabular-nums text-secondary">
-                    {[rg.primary_type ?? 'release', yr].filter(Boolean).join(' · ')}
+                    {[rg.primary_type || null, yr].filter(Boolean).join(' · ')}
                   </p>
                 </Link>
               );
