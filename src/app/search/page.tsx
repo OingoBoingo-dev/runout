@@ -88,6 +88,21 @@ export default async function SearchPage({
 
       {problem && <p className="mt-4 font-mono text-sm text-red">{problem}</p>}
 
+      {/* Albums lead — for an album-title query the record itself must come first,
+          not artists (e.g. tribute bands) that named themselves after it. */}
+      <section className="mt-8">
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">Albums</p>
+        {albums.length ? (
+          <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
+            {albums.map(a => (
+              <Row key={a.mbid} mbid={a.mbid} title={a.title} artist={a.artist_name} year={a.year} cover={a.cover_url} kind="album" />
+            ))}
+          </div>
+        ) : (
+          !problem && <p className="font-mono text-sm text-secondary">No albums matched “{q}”.</p>
+        )}
+      </section>
+
       <section className="mt-8">
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
           Artists
@@ -119,19 +134,6 @@ export default async function SearchPage({
           </div>
         ) : (
           !problem && <p className="font-mono text-sm text-secondary">No artists matched “{q}”.</p>
-        )}
-      </section>
-
-      <section className="mt-8">
-        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">Albums</p>
-        {albums.length ? (
-          <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
-            {albums.map(a => (
-              <Row key={a.mbid} mbid={a.mbid} title={a.title} artist={a.artist_name} year={a.year} cover={a.cover_url} kind="album" />
-            ))}
-          </div>
-        ) : (
-          !problem && <p className="font-mono text-sm text-secondary">No albums matched “{q}”.</p>
         )}
       </section>
 
