@@ -1,7 +1,8 @@
 import PQueue from 'p-queue';
 import { resolveAndPersist, type CoverCandidate } from '@/lib/covers';
+import { rankAndDedup, rankArtists, type RankCandidate } from '@/lib/search-rank';
 import { supabaseAdmin } from '@/lib/supabase/admin';
-import type { CatalogItem, Kind, Track } from '@/lib/types';
+import type { ArtistResult, CatalogItem, Kind, Track } from '@/lib/types';
 
 /**
  * MusicBrainz proxy core. Clients never call MB directly — route handlers and
@@ -58,6 +59,9 @@ interface MBReleaseGroup {
   tags?: MBTag[];
   releases?: { id: string; status?: string; date?: string }[];
   relations?: { type?: string; url?: { resource?: string } }[];
+  'secondary-types'?: string[];
+  /** search-only: total release count in this release-group (canonical signal). */
+  count?: number;
 }
 interface MBRecording {
   id: string;
@@ -87,11 +91,15 @@ const yearOf = (d?: string) => {
   return Number.isInteger(y) && y > 0 ? y : null;
 };
 
-/** Catalog row plus transient cover-resolution hints (never persisted). */
+/** Catalog row plus transient cover-resolution + ranking hints (never persisted). */
 export type NormalizedItem = Omit<CatalogItem, 'fetched_at' | 'cover_url'> & {
   cover_url: string | null;
   rgMbid?: string | null;
   relMbids?: string[];
+  /** release count — mild canonical signal for ranking; not persisted. */
+  releaseCount?: number;
+  /** MB secondary types — ranking-only, not persisted. */
+  secondaryTypes?: string[];
 };
 
 function relUrl(
@@ -116,6 +124,10 @@ function fromReleaseGroup(rg: MBReleaseGroup): NormalizedItem {
     tags: topTags(rg.tags),
     rgMbid: rg.id,
     relMbids: (rg.releases ?? []).slice(0, 3).map(r => r.id),
+    // Prefer MB's `count` (total releases in the RG) — a strong canonical
+    // signal; fall back to the (truncated) releases array length.
+    releaseCount: rg.count ?? (rg.releases ?? []).length,
+    secondaryTypes: rg['secondary-types'] ?? [],
   };
 }
 
@@ -171,26 +183,63 @@ async function upsertCatalog(items: NormalizedItem[]) {
 
 /* ---------- public API ---------- */
 
+/**
+ * Ordko popularity per mbid: how many published lists each candidate appears on.
+ * One cheap query over the candidate set; failures degrade to "no boost".
+ */
+async function popularityFor(mbids: string[]): Promise<Map<string, number>> {
+  const pop = new Map<string, number>();
+  if (!mbids.length) return pop;
+  const admin = supabaseAdmin();
+  // Only PUBLISHED lists count toward popularity (mirrors chart_view); the inner
+  // join drops entries in draft/private lists. Degrades to no-boost on error.
+  const { data, error } = await admin
+    .from('list_entries')
+    .select('item_mbid, lists!inner(status)')
+    .eq('lists.status', 'published')
+    .in('item_mbid', mbids);
+  if (error || !data) return pop;
+  for (const row of data as { item_mbid: string }[]) {
+    pop.set(row.item_mbid, (pop.get(row.item_mbid) ?? 0) + 1);
+  }
+  return pop;
+}
+
 export async function searchMB(kind: Kind, q: string): Promise<NormalizedItem[]> {
   const enc = encodeURIComponent(q);
-  const items =
+  // Fetch a WIDE candidate window (100) so canonical records MB's text search
+  // under-ranks (e.g. Michael Jackson's "Thriller") still enter the set and can
+  // be surfaced by release-count / popularity. One MB call; ranking trims to 10.
+  const raw =
     kind === 'album'
       ? ((await mbFetch<{ 'release-groups'?: MBReleaseGroup[] }>(
-          `/release-group?query=${enc}&fmt=json&limit=12`,
+          `/release-group?query=${enc}&fmt=json&limit=100`,
         ))['release-groups'] ?? []).map(fromReleaseGroup)
       : ((await mbFetch<{ recordings?: MBRecording[] }>(
-          `/recording?query=${enc}&fmt=json&limit=12`,
+          `/recording?query=${enc}&fmt=json&limit=100`,
         )).recordings ?? []).map(fromRecording);
+
+  // Tag each with its MB result position (a canonical prior for songs), then
+  // relevance re-rank + dedup using our own popularity signal.
+  const withRank = raw.map((it, i) => ({ ...it, mbRank: i })) as (NormalizedItem & RankCandidate)[];
+  const popularity = await popularityFor(withRank.map(i => i.mbid));
+  const ranked = rankAndDedup<NormalizedItem & RankCandidate>(
+    withRank,
+    q,
+    { kind: kind === 'album' ? 'album' : 'song', popularity },
+    10,
+  );
+
   // Search results seed the catalog so list entries can reference them (FK).
-  await upsertCatalog(items);
+  await upsertCatalog(ranked);
   // Hand back persisted art where it already exists so results render covers.
   const admin = supabaseAdmin();
   const { data: existing } = await admin
     .from('catalog_items')
     .select('mbid, cover_url')
-    .in('mbid', items.map(i => i.mbid));
+    .in('mbid', ranked.map(i => i.mbid));
   const covers = new Map((existing ?? []).map(r => [r.mbid, r.cover_url]));
-  return items.map(i => ({ ...i, cover_url: covers.get(i.mbid) ?? null }));
+  return ranked.map(i => ({ ...i, cover_url: covers.get(i.mbid) ?? null }));
 }
 
 export interface ItemDetail {
@@ -240,4 +289,108 @@ export async function fetchItemDetail(mbid: string, kind: Kind): Promise<ItemDet
   await upsertCatalog([item]);
   await resolveAndPersist([asCoverCandidate(item)]);
   return { item, tracks: [] };
+}
+
+/* ---------- artists (display-only; never written to catalog_items) ---------- */
+
+interface MBArtist {
+  id: string;
+  name?: string;
+  disambiguation?: string;
+  type?: string;
+  score?: number;
+  area?: { name?: string };
+  'begin-area'?: { name?: string };
+  'release-groups'?: MBReleaseGroup[];
+  relations?: { type?: string; url?: { resource?: string } }[];
+}
+
+function fromArtist(a: MBArtist): ArtistResult {
+  return {
+    mbid: a.id,
+    name: a.name ?? 'Unknown artist',
+    disambiguation: a.disambiguation?.trim() ? a.disambiguation.trim() : null,
+    type: a.type ?? null,
+    area: a.area?.name ?? a['begin-area']?.name ?? null,
+    score: Number(a.score ?? 0),
+  };
+}
+
+/** Search MB for artists, re-rank (exact/prefix over MB score), return top ~6. */
+export async function searchArtists(q: string): Promise<ArtistResult[]> {
+  const enc = encodeURIComponent(q);
+  const artists = (
+    (await mbFetch<{ artists?: MBArtist[] }>(`/artist?query=${enc}&fmt=json&limit=8`)).artists ?? []
+  ).map(fromArtist);
+  // rankArtists needs an `mbScore`; ArtistResult already carries `score`, so
+  // reuse it as the ranking baseline without adding a transient field.
+  const ranked = rankArtists(
+    artists.map(a => ({ ...a, mbScore: a.score })),
+    q,
+    6,
+  );
+  return ranked.map(a => ({
+    mbid: a.mbid,
+    name: a.name,
+    disambiguation: a.disambiguation,
+    type: a.type,
+    area: a.area,
+    score: a.score,
+  }));
+}
+
+export interface ArtistDetail {
+  artist: ArtistResult;
+  wikipedia_url: string | null;
+  discogs_url: string | null;
+  /** Official discography as album items linking to /item/{rg-mbid}. */
+  releaseGroups: NormalizedItem[];
+}
+
+/**
+ * Read-only artist lookup for /artist/{mbid}: header metadata + official
+ * discography (release-groups) as album cards. Bootlegs/secondary types are
+ * excluded. Covers are resolved (best-effort) for the discography.
+ */
+export async function fetchArtistDetail(mbid: string): Promise<ArtistDetail> {
+  const a = await mbFetch<MBArtist>(
+    `/artist/${mbid}?inc=release-groups+url-rels+tags&fmt=json`,
+    86400,
+  );
+  const artist = fromArtist(a);
+  // Official primary release-groups only; drop secondary-type-heavy rows later
+  // in the page. Attribute the artist as the credit so cards read correctly.
+  const releaseGroups = (a['release-groups'] ?? [])
+    .map(rg => {
+      const item = fromReleaseGroup(rg);
+      if (item.artist_name === 'Unknown artist') item.artist_name = artist.name;
+      if (!item.artist_mbid) item.artist_mbid = artist.mbid;
+      return item;
+    })
+    .filter(item => {
+      const t = (item.primary_type ?? '').toLowerCase();
+      return t === 'album' || t === 'ep' || t === 'single' || t === '';
+    })
+    .sort((x, y) => (y.year ?? 0) - (x.year ?? 0));
+
+  // Seed the catalog so /item/{rg} links resolve without a fresh MB call,
+  // and best-effort resolve covers for the discography grid.
+  if (releaseGroups.length) {
+    await upsertCatalog(releaseGroups);
+    await resolveAndPersist(releaseGroups.map(asCoverCandidate));
+    const admin = supabaseAdmin();
+    const { data: existing } = await admin
+      .from('catalog_items')
+      .select('mbid, cover_url')
+      .in('mbid', releaseGroups.map(i => i.mbid));
+    const covers = new Map((existing ?? []).map(r => [r.mbid, r.cover_url]));
+    for (const rg of releaseGroups) rg.cover_url = covers.get(rg.mbid) ?? rg.cover_url;
+  }
+
+  return {
+    artist,
+    wikipedia_url: relUrl(a.relations, 'wikipedia'),
+    discogs_url: relUrl(a.relations, 'discogs'),
+    releaseGroups,
+  };
 }

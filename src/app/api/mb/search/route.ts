@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'kind (album|song) and q are required' }, { status: 400 });
   }
   try {
+    // searchMB now relevance-re-ranks + dedups internally, so the list-builder
+    // (kind-scoped) gets the same canonical-first ordering the /search page does.
     const items = await searchMB(parsed.data.kind, parsed.data.q);
     // Resolve missing covers after the response — never blocks the search.
     after(() => resolveAndPersist(items.filter(i => !i.cover_url).map(asCoverCandidate)));
