@@ -99,3 +99,19 @@ export interface Track {
   title: string;
   len: number | null;
 }
+
+/**
+ * Artist search/lookup result — display-only. Artists are NEVER written to
+ * catalog_items (that table is album|song). Returned by search for a sectioned
+ * global view and linked to /artist/{mbid}.
+ */
+export interface ArtistResult {
+  mbid: string;
+  name: string;
+  disambiguation: string | null;
+  /** MusicBrainz artist type: Group | Person | Orchestra | Choir | ... */
+  type: string | null;
+  area: string | null;
+  /** MusicBrainz relevance score (0-100) — used only for ranking. */
+  score: number;
+}
