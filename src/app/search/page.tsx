@@ -4,7 +4,8 @@ import { after } from 'next/server';
 import { Cover } from '@/components/Cover';
 import { resolveAndPersist } from '@/lib/covers';
 import { formatYear } from '@/lib/format';
-import { asCoverCandidate, MBBusyError, searchMB } from '@/lib/mb';
+import { asCoverCandidate, MBBusyError, searchArtists, searchMB } from '@/lib/mb';
+import type { ArtistResult } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Search' };
 
@@ -28,11 +29,13 @@ export default async function SearchPage({
     );
   }
 
+  let artists: ArtistResult[] = [];
   let albums: Awaited<ReturnType<typeof searchMB>> = [];
   let songs: Awaited<ReturnType<typeof searchMB>> = [];
   let problem: string | null = null;
   try {
-    // Sequential on purpose — both go through the same 1.1s-spaced queue.
+    // Sequential on purpose — all three go through the same 1.1s-spaced queue.
+    artists = await searchArtists(q);
     albums = await searchMB('album', q);
     songs = await searchMB('song', q);
     // Resolve missing covers after the response — never blocks the page.
@@ -84,6 +87,43 @@ export default async function SearchPage({
       <h1 className="font-display text-3xl break-words">“{q}”</h1>
 
       {problem && <p className="mt-4 font-mono text-sm text-red">{problem}</p>}
+
+      <section className="mt-8">
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+          Artists
+        </p>
+        {artists.length ? (
+          <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
+            {artists.map(a => (
+              <Link
+                key={a.mbid}
+                href={`/artist/${a.mbid}`}
+                className="group flex items-center gap-3 px-4 py-3"
+              >
+                <span
+                  aria-hidden
+                  className="flex h-12 w-12 flex-none items-center justify-center rounded-full border border-hairline bg-ink/5 font-display text-lg text-secondary group-hover:text-cobalt"
+                >
+                  {(a.name[0] ?? '?').toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold group-hover:text-cobalt">
+                    {a.name}
+                  </span>
+                  <span className="block truncate font-mono text-xs text-secondary">
+                    {[a.type, a.disambiguation || a.area].filter(Boolean).join(' · ') || 'artist'}
+                  </span>
+                </span>
+                <span className="flex-none rounded-chip border border-hairline px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-secondary">
+                  artist
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          !problem && <p className="font-mono text-sm text-secondary">No artists matched “{q}”.</p>
+        )}
+      </section>
 
       <section className="mt-8">
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">Albums</p>
