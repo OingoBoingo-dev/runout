@@ -7,6 +7,17 @@ export const alt = 'A collector profile on Ordko';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
+// CDN-cache the rendered card so link crawlers that re-fetch get an instant
+// response — only the first render pays the cover-fetch cost.
+const CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+};
+
+/** Request Cover Art Archive's small thumbnail for the OG tiles; leave others. */
+function thumb(url: string): string {
+  return url.replace(/(coverartarchive\.org\/\S*\/(?:front|back))(?:-\d+)?$/i, '$1-250');
+}
+
 // Pressing-plant palette (OG images don't get Tailwind — inline only).
 const PAPER = '#FAF6EC';
 const INK = '#16150F';
@@ -45,7 +56,7 @@ type ProfileData = {
  */
 async function fetchCover(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000), redirect: 'follow' });
+    const res = await fetch(thumb(url), { signal: AbortSignal.timeout(2200), redirect: 'follow' });
     if (!res.ok) return null;
     const type = res.headers.get('content-type') ?? 'image/jpeg';
     if (!type.startsWith('image/')) return null;
@@ -210,7 +221,7 @@ export default async function Image({ params }: { params: Promise<{ username: st
           </div>
         </div>
       ),
-      { ...size },
+      { ...size, headers: CACHE_HEADERS },
     );
   }
 
@@ -288,6 +299,6 @@ export default async function Image({ params }: { params: Promise<{ username: st
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, headers: CACHE_HEADERS },
   );
 }
