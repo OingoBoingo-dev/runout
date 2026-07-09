@@ -68,3 +68,20 @@ taste, or feel seen for it?**
 - Cycle 1 (2026-07-05): SHIPPED — shareable lists (copy-link + OG cards) +
   profile canvas (avatar + cover banner). main @ 4018086. Scorecard 8/7/7/8.
   1 return (OG mosaic), 1 parked verify-dod check (#27). See TEAM_LOG.
+
+## Known limitation — song (recording) canonicity (2026-07-09, cycle 6)
+
+Album search ranks canonically and robustly (release-count is a strong, stable
+signal: "dark side of the moon"->Pink Floyd, "thriller"->Michael Jackson, verified
+on prod). SONG search cannot reliably float the famous original above covers on a
+COLD catalog, and this is a MusicBrainz data limitation, not a ranking bug:
+  - MB gives every exact-title recording score=100 (no discrimination).
+  - MB fragments a famous song across many recording MBIDs (per remaster/release),
+    so no single canonical recording dominates by release-count in search results
+    (diagnostic: Queen "Bohemian Rhapsody" recording shows releases=1 while covers
+    show 4-5). Prod "bohemian rhapsody" landed on a cover.
+Mitigations in place: dedup by (title+artist), orphan-recording demotion, noise
+(karaoke/live/instrumental) demotion, MB-order prior, and the Ordko popularity
+boost (published-list count) — the last SELF-CORRECTS as songs get added to lists.
+Real fix if songs matter sooner: a Discogs-backed song-popularity pass (have/want),
+or a curated canonical map. Deferred pending owner priority.
