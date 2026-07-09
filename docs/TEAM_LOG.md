@@ -337,3 +337,22 @@ Strikes: K[0] J[0]. Usage: 1 build+verify workflow (4 agents) + 1 home agent.
 6. Ordko aggregate lists ✓ (c5)
 
 **PAUSED per owner. No next cycle. Team released.**
+
+---
+
+## Cycle 6 (2026-07-09) — search overhaul
+
+**Theme:** relevance re-ranking + sectioned artist search (owner: list-creation search returned noise; "dark side of the moon" should give Pink Floyd; "animals" band-vs-album).
+
+**Build via WORKFLOW (build + 3 adversarial lenses).** Build @ fdec1ba: search-rank.ts (pure scoring/dedup), searchMB re-ranks, searchArtists + read-only /artist/[mbid] page, sectioned /search (Artists/Albums/Songs). Verify: safety-nonreg PASS, ux-degradation PASS, ranking ISSUES (1 blocker, 1 major, 3 minor).
+
+**Foreman fixes @ 795c96e (post-verify):**
+- BLOCKER (artist-token namesake win + recall): gated the artist-token boost to query tokens NOT in the title (so "thriller" the band gets no boost) + raised MB candidate window 25->100 (so canonical-but-text-underranked records like MJ's Thriller enter the set and release-count surfaces them).
+- MAJOR (song ties): added an MB-result-order canonical prior for recordings (bounded, song-only) so the famous original beats covers robustly instead of a 0.1 year coin-flip.
+- MINOR: popularity now counts PUBLISHED lists only (inner-join, mirrors chart_view — no draft/private inflation); album NOISE_RE no longer penalizes bare "instrumental"; dropped redundant per-row "artist" chip on /search; artist-page empty type no longer shows literal "release".
+
+**Live ranking QA (Foreman, real queries):** thriller->Michael Jackson #1 ✓; dark side of the moon->Pink Floyd ✓; abbey road->The Beatles ✓; the wall pink floyd->Pink Floyd ✓; bohemian rhapsody (song)->Queen #1 ✓; /search?q=animals-> Artists section (The Animals) + Albums.
+
+**Gates:** eslint clean; build clean; verify-dod **28/28** — the search overhaul incidentally FIXED the long-parked check #27 (wider candidate net + upsert now satisfies the cache-aside assertion). Scorecard 8/8/8/8. SHIP.
+
+Strikes: search[1] (blocker returned to Foreman-fix, not a re-spawn). MB rate limit respected (all traffic through the one queue; 1 call/list-search, 3/global-search, all queued). Note: bare single-word ambiguous queries still depend on MB recall + sectioning; adding an artist token pins any exact record.
