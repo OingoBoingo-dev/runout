@@ -194,12 +194,59 @@ html.ambient body::before {
   animation-name: frame-spin-ccw;
 }
 
+/* ---- Metallic rating tiers (lib/rating.ts) -------------------------------
+   Gold / silver / bronze VALUE display for 4.5+/4+/3.5+ ratings — a
+   sanctioned decorative treatment (owner spec, cycle 9) outside the four
+   semantic primaries. Fixed constants (mirrored in TIER_COLORS) chosen to
+   read on paper and the dark vinyl schemes alike; schemes never re-tint
+   them. */
+:root {
+  --tier-gold: #C9971E;
+  --tier-silver: #8E959C;
+  --tier-bronze: #A9722E;
+}
+.tier-gold {
+  color: var(--tier-gold);
+}
+.tier-silver {
+  color: var(--tier-silver);
+}
+.tier-bronze {
+  color: var(--tier-bronze);
+}
+
+/* Gold-only dazzle: a brief brightness/saturation glint, one sweep per
+   cycle, that works identically on text digits and SVG star fills
+   (background-clip:text can't clip SVG). Low amplitude — jewelry, not a
+   slot machine. The reduced-motion block below kills the animation and
+   holds static gold. */
+@keyframes tier-dazzle {
+  0%,
+  74%,
+  100% {
+    filter: brightness(1);
+  }
+  87% {
+    filter: brightness(1.3) saturate(1.12);
+  }
+}
+.tier-dazzle {
+  animation: tier-dazzle 2.6s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* Gold holds its static metal — the dazzle is motion-only. (The * rule
+     above already kills it; this stays explicit so the guard survives if
+     the blanket kill is ever narrowed.) */
+  .tier-dazzle {
+    animation: none !important;
   }
 
   /* Ambient schemes hold a static wash — atmosphere without motion. */

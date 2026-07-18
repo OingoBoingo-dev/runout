@@ -6,11 +6,12 @@ import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { FollowButton } from '@/components/FollowButton';
 import { ProfileBanner } from '@/components/ProfileBanner';
+import { RatingNumber } from '@/components/RatingNumber';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Stars } from '@/components/Stars';
 import { AvatarFrame } from '@/lib/borders';
 import { getProfileByUsername } from '@/lib/data';
-import { fmtCount, fmtInt, fmtRating, timeAgo } from '@/lib/format';
+import { fmtCount, fmtInt, timeAgo } from '@/lib/format';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { CatalogItem, List, Rating } from '@/lib/types';
 
@@ -315,7 +316,7 @@ export default async function ProfilePage({
                       </span>
                     </span>
                     <Stars value={Number(r.value)} size={14} />
-                    <span className="font-mono text-xs tabular-nums text-secondary">{fmtRating(Number(r.value))}</span>
+                    <RatingNumber value={Number(r.value)} className="font-mono text-xs tabular-nums" />
                   </div>
                 );
               })}

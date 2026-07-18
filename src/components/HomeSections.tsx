@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
+import { RatingNumber } from '@/components/RatingNumber';
 import { Stars } from '@/components/Stars';
 import type { FeedEntry, TrendingList } from '@/lib/data';
-import { fmtInt, fmtRating, formatPosition, formatYear, timeAgo } from '@/lib/format';
+import { fmtInt, formatPosition, formatYear, timeAgo } from '@/lib/format';
 import type { ChartRow } from '@/lib/types';
 
 const HeartIcon = (
@@ -159,7 +160,7 @@ export function FeedRow({ f }: { f: FeedEntry }) {
                 {f.item.title}
               </Link>{' '}
               <Stars value={f.ratingValue ?? 0} size={13} />{' '}
-              <span className="font-mono text-sm text-secondary">{fmtRating(f.ratingValue)}</span>
+              <RatingNumber value={f.ratingValue ?? null} className="font-mono text-sm" />
             </>
           )}
           {a.verb === 'follow' && f.targetProfile && (

@@ -29,6 +29,9 @@ export function RateControl({ itemMbid, initial }: { itemMbid: string; initial: 
   return (
     <span className="inline-flex items-center gap-3">
       <span className={`relative inline-flex ${pending ? 'opacity-60' : ''}`}>
+        {/* The value display tiers via Stars (gold dazzle / silver / bronze
+            once a rating is set; cobalt while unrated) — the half-star hit
+            targets below keep their interactive-cobalt hover feedback. */}
         <Stars value={value} size={26} />
         <span className="absolute -inset-y-2 inset-x-0 grid grid-cols-10">
           {Array.from({ length: 10 }, (_, i) => {
