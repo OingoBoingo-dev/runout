@@ -10,8 +10,13 @@
  * the semantics hold — rank is always ONE hue, interactive another.
  *
  * Contrast is a hard gate, verified for all 12: ink/paper >= 7:1 (AAA body),
- * secondary/paper >= 4.5:1 (AA), and every role hue >= 3:1 against BOTH
- * paper and card (roles render as chips, buttons and text accents).
+ * secondary/paper >= 4.5:1 (AA), and every role hue passes by how it actually
+ * renders — interactive + emotion are TEXT roles (links, like-counts):
+ * >= 3:1 against both paper and card; rank + confirm are predominantly FILLS
+ * (bg-yellow chips/CTAs always carry text-ink; the bg-green toggle carries
+ * text-paper), so they pass by EITHER that text gate OR the fill pairing at
+ * >= 4.5:1 (ink-on-rank / paper-on-confirm). Confirm additionally holds the
+ * text gate everywhere because text-green exists (SettingsForm).
  *
  * The four locked palettes are ambient: a slow full-page wash of the role
  * hues drifts behind content (see `html.ambient body::before` in
@@ -52,8 +57,9 @@ export const SCHEMES: Palette[] = [
   {
     id: 'stock',
     name: 'Stock Paper',
-    vibe: 'The pressing-plant default — warm paper, plate-gold rank',
-    roles: { rank: '#B08000', interactive: '#2C4BDF', emotion: '#E8442E', confirm: '#1CA24D' },
+    vibe: 'The pressing-plant default — warm paper, flat ink',
+    // The brand four, byte-identical to the pre-overhaul globals.css defaults.
+    roles: { rank: '#FFC72C', interactive: '#2C4BDF', emotion: '#E8442E', confirm: '#1CA24D' },
     neutrals: { paper: '#FAF6EC', card: '#FFFFFF', ink: '#16150F', secondary: '#6F6A5E', hairline: hairline('#16150F') },
     unlockAt: 0,
   },
@@ -61,7 +67,7 @@ export const SCHEMES: Palette[] = [
     id: 'test-pressing',
     name: 'Test Pressing',
     vibe: 'White label, gallery grey — sharp signal primaries',
-    roles: { rank: '#A16207', interactive: '#0F4CD8', emotion: '#D31F30', confirm: '#0E7444' },
+    roles: { rank: '#FFB000', interactive: '#0F4CD8', emotion: '#D31F30', confirm: '#0E7444' },
     neutrals: { paper: '#F2F2EF', card: '#FDFDFC', ink: '#131414', secondary: '#585D5A', hairline: hairline('#131414') },
     unlockAt: 0,
   },
@@ -69,7 +75,7 @@ export const SCHEMES: Palette[] = [
     id: 'cobalt-rust',
     name: 'Cobalt & Rust',
     vibe: 'Deep blues against rust and carmine on bone paper',
-    roles: { rank: '#A03D10', interactive: '#1D4FD7', emotion: '#BE123C', confirm: '#0F6674' },
+    roles: { rank: '#D65A1F', interactive: '#1D4FD7', emotion: '#BE123C', confirm: '#0F6674' },
     neutrals: { paper: '#F3F0E9', card: '#FFFFFF', ink: '#191410', secondary: '#6D6459', hairline: hairline('#191410') },
     unlockAt: 0,
   },
@@ -77,7 +83,7 @@ export const SCHEMES: Palette[] = [
     id: 'marigold',
     name: 'Marigold',
     vibe: 'Sunny cream, lapis blue and gold — a summer 45',
-    roles: { rank: '#996F00', interactive: '#1354C8', emotion: '#BC3F12', confirm: '#4D7C0F' },
+    roles: { rank: '#E8A800', interactive: '#1354C8', emotion: '#BC3F12', confirm: '#4D7C0F' },
     neutrals: { paper: '#F8F1DD', card: '#FFFDF6', ink: '#191305', secondary: '#6E6142', hairline: hairline('#191305') },
     unlockAt: 0,
   },
@@ -85,7 +91,7 @@ export const SCHEMES: Palette[] = [
     id: 'crate-digger',
     name: 'Crate Digger',
     vibe: 'Kraft sepia, brass, moss and brick — attic finds',
-    roles: { rank: '#8A5A00', interactive: '#0C6B5D', emotion: '#AC3A1C', confirm: '#55741F' },
+    roles: { rank: '#C08A00', interactive: '#0C6B5D', emotion: '#AC3A1C', confirm: '#55741F' },
     neutrals: { paper: '#F0E6D0', card: '#FAF3E3', ink: '#201505', secondary: '#705C3B', hairline: hairline('#201505') },
     unlockAt: 0,
   },
@@ -93,7 +99,7 @@ export const SCHEMES: Palette[] = [
     id: 'rose-cut',
     name: 'Rose Cut',
     vibe: 'Rose paper, berry and plum — a lacquer cut for someone',
-    roles: { rank: '#9A5B00', interactive: '#6D28D9', emotion: '#C01048', confirm: '#116149' },
+    roles: { rank: '#C77B21', interactive: '#6D28D9', emotion: '#C01048', confirm: '#116149' },
     neutrals: { paper: '#F9ECEA', card: '#FEF7F6', ink: '#24100F', secondary: '#7E5450', hairline: hairline('#24100F') },
     unlockAt: 0,
   },

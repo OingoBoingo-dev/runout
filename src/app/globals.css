@@ -4,9 +4,11 @@
    HUE per meaning now comes from the active palette (lib/themes.ts):
    rank (was fixed yellow), interactive (was cobalt), emotion (likes +
    Publish, was red), confirm (was green). These stock defaults are the
-   "Stock Paper" palette; applyScheme overrides them inline on <html>. */
+   original pre-overhaul brand four, byte-identical — the "Stock Paper"
+   palette; applyScheme overrides them inline on <html>. Rank passes
+   contrast as a FILL (ink-on-#FFC72C ~= 11.7:1) — it is never body text. */
 :root {
-  --role-rank: #B08000;
+  --role-rank: #FFC72C;
   --role-interactive: #2C4BDF;
   --role-emotion: #E8442E;
   --role-confirm: #1CA24D;
