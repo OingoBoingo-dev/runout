@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { updateProfile } from '@/app/actions/profile';
@@ -14,12 +15,15 @@ export function SettingsForm({
   bio,
   avatarUrl,
   backgroundUrl,
+  isAdmin = false,
 }: {
   username: string;
   displayName: string;
   bio: string;
   avatarUrl: string | null;
   backgroundUrl: string | null;
+  /** Renders the Admin section — false/absent (incl. pre-0004) hides it entirely. */
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(displayName);
@@ -117,6 +121,20 @@ export function SettingsForm({
         </button>
       </div>
     </form>
+
+      {isAdmin && (
+        <section className="rounded-card border border-hairline bg-card p-6 text-ink">
+          <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+            Admin
+          </p>
+          <Link
+            href="/admin"
+            className="inline-block font-mono text-xs uppercase tracking-wider text-cobalt hover:underline"
+          >
+            Open admin panel →
+          </Link>
+        </section>
+      )}
     </div>
   );
 }
