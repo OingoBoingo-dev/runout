@@ -5,7 +5,15 @@ import { useState, useTransition } from 'react';
 import { rateItem } from '@/app/actions/social';
 import { Stars } from '@/components/Stars';
 
-/** Interactive 0.5–5 star rating: ten half-star hit targets over the row. */
+/**
+ * Interactive 0.5–5 star rating: ten half-star hit targets over the row.
+ *
+ * Rating-display preference (cycle 10): the INPUT affordance stays stars in
+ * both modes — you always rate by tapping half-star targets. The numeric
+ * readout that swaps to N/10 in 'tenths' mode is the RatingNumber the item
+ * page renders beside this control; RateControl itself prints no number, so
+ * it needs no hook.
+ */
 export function RateControl({ itemMbid, initial }: { itemMbid: string; initial: number }) {
   const router = useRouter();
   const [value, setValue] = useState(initial);
