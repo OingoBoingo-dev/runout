@@ -107,6 +107,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
           artist={item.artist_name}
           className="zine w-[min(240px,60vw)] flex-none rounded-card"
           size={500}
+          sizes="min(240px, 60vw)"
           priority
         />
         <div className="min-w-[220px] flex-1">

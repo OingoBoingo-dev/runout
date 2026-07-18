@@ -48,9 +48,12 @@ export default async function ExplorePage({
       {/* Hero — "The Wall": edge-to-edge gapless mosaic scrolling under the glass bar. */}
       {wall.length > 0 && (
         <div className="-mt-[calc(56px+env(safe-area-inset-top))] grid grid-cols-5">
-          {wall.map(r => (
+          {wall.map((r, i) => (
             <Link key={r.mbid} href={`/item/${r.mbid}`} aria-label={r.title} className="block">
-              <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-none" className="w-full" size={500} priority />
+              {/* Only the first row (5 tiles) is above the fold — high priority
+                  there; the second row loads lazily so it can't starve the LCP.
+                  sizes: tiles are 20vw full-bleed, capping ~256px on desktop. */}
+              <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-none" className="w-full" size={500} sizes="20vw" priority={i < 5} />
             </Link>
           ))}
         </div>
@@ -111,7 +114,9 @@ export default async function ExplorePage({
             {rows.map((r, i) => (
               <Link key={r.mbid} href={`/item/${r.mbid}`} className="press group block min-w-0">
                 <span className="relative block">
-                  <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-card" className="zine w-full" size={500} priority={i < 5} />
+                  {/* Grid sits below the wall — never above the fold; stay lazy
+                      so the wall's five priority tiles own the connection slots. */}
+                  <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-card" className="zine w-full" size={500} sizes="(min-width: 640px) 200px, 45vw" />
                   {/* Yellow hype-sticker rank chip: ink Archivo numeral, whisper of shadow. */}
                   <span className="absolute left-2 top-2 rounded-full bg-yellow px-2.5 py-1.5 font-display text-[15px] leading-none text-ink shadow-[0_1px_4px_rgba(22,21,15,0.25)] tabular-nums">
                     {formatPosition(i + 1, Math.min(rows.length, 50))}
