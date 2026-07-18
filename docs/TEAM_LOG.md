@@ -356,3 +356,39 @@ Strikes: K[0] J[0]. Usage: 1 build+verify workflow (4 agents) + 1 home agent.
 **Gates:** eslint clean; build clean; verify-dod **28/28** — the search overhaul incidentally FIXED the long-parked check #27 (wider candidate net + upsert now satisfies the cache-aside assertion). Scorecard 8/8/8/8. SHIP.
 
 Strikes: search[1] (blocker returned to Foreman-fix, not a re-spawn). MB rate limit respected (all traffic through the one queue; 1 call/list-search, 3/global-search, all queued). Note: bare single-word ambiguous queries still depend on MB recall + sectioning; adding an artist token pins any exact record.
+
+---
+
+## Cycle 7 (2026-07-18; started 2026-07-09) — cover speed (rollout wave 1)
+
+**Lean pipeline debut** (ultracode off): single builder + /code-review skill
+(8 finder angles) + Foreman fixes, replacing the build+verify workflow fleets.
+Also: wrote the real CLAUDE.md (commands, deploy gotcha, architecture, frozen
+schema) @ 943d98a — every future agent/session inherits it.
+
+**Shipped @ fc18576 + 61318da (Task: owner "album art shown as quickly as
+possible... the lag is annoying"):**
+- CAA/iTunes thumbnail variants sized to slot via new lib/cover-url.ts
+  (-250 rows, -500 cards; iTunes 250/600) — zero full-size fetches (was 100%).
+- preconnect/dns-prefetch to cover hosts; explicit dims (no layout shift);
+  eager/lazy split.
+- Review fixes: srcset (250/500/1200) + sizes on every cover — browser picks
+  per viewport/DPR (375px phones now pull 250s where they pulled 500s; DPR3
+  item hero can pull 1200); fetchPriority=high capped 15→5 (wall row 1 only —
+  3 finder angles flagged the flattening); thumb-404 → stored-original →
+  monogram fallback ladder in Cover.tsx; OG routes now import shared
+  coverThumb (killed 3 drifting copies of the CAA regex); dead null overload
+  trimmed. next/image optimizer (fix 4) DEFERRED to roadmap (config risk;
+  fixes 1-3 ≈ 90% of the win).
+- Review verdicts recorded: mzstatic is1-is5 preconnect finding REFUTED by
+  live data (only is1 exists, 120/120); regex end-anchor findings REFUTED
+  (0/816 nonconforming URLs). Angle C (cross-file) lost to a process restart;
+  its scope was covered by angles B + efficiency.
+
+**Verification:** DOM-verified in browser pane (75/75 covers srcset'd,
+fetchHigh=5, sizes=20vw active, browser picked 250s at test viewport).
+eslint/build clean. verify-dod 27/28 — #27 re-failed: PROBED root cause
+directly (search 200 + 5 results; catalog 958→958 saturated for the fixed
+test term — grew organically 816→958 in 9 days). Structural test flaw, parked
+again; repair already on roadmap. Scorecard: usability 8 / ease 8 /
+intuitiveness 8 / aesthetics 8. SHIP.
