@@ -471,3 +471,44 @@ there; stars vs 1/10 toggle):**
 the VinylTheme diff (record branch byte-identical) — both clean.
 **Gates:** eslint/build clean; verify-dod 27/28 (#27 parked). Scorecard
 8/8/8/8. SHIP. Remaining: palette overhaul (final wave).
+
+---
+
+## Cycle 11 (2026-07-18) — palette overhaul (rollout FINAL wave)
+
+**Shipped @ ae17a64 + c2f1aa5 (owner spec: Office-style palettes, 4-5 colors,
+distinct styles, locked=animated, affect ALL elements):**
+- ROLE-VAR ARCHITECTURE: --role-rank/interactive/emotion/confirm +
+  --color-yellow/cobalt/red/green as permanent aliases — all ~139 component
+  refs follow the palette with ZERO component churn. Semantics hold within
+  every palette (one hue per role); hues differ across palettes.
+- 12 distinct palettes (8 free incl. 2 darks + 4 locked ambient 25-100):
+  Stock Paper (BRAND VERBATIM #FFC72C/#2C4BDF/#E8442E/#1CA24D), Test Pressing,
+  Cobalt & Rust, Marigold, Crate Digger, Rose Cut, Amethyst Press, After
+  Hours; Blacklight/Lava Lounge/Deep Groove/Gold Master (role-hue ambient
+  washes, 52s drift, reduced-motion static).
+- Gate correction mid-cycle (Foreman spec fault, no strike): blanket 3:1
+  hue-vs-paper wrongly treated FILL colors as text — corrected to per-role
+  paths (rank/confirm may pass ink-on-fill >=4.5; interactive/emotion text
+  3:1). Stock restored verbatim (ink-on-#FFC72C 11.72:1); light-free ranks
+  re-brightened (marigold #E8A800, rust #D65A1F, brass #C08A00...). Full
+  matrix ALL GREEN both rounds; fill pairings verified by grep (bg-yellow
+  always text-ink; bg-green text-paper).
+- LEGACY_MAP: retired ids (anti-static/tobacco-sleeve/blush-press/
+  mint-condition/cold-storage/wood-panel) resolve to successors everywhere
+  (localStorage normalized on load; profiles.theme_scheme via getScheme;
+  AdoptTheme). Live-verified: stored tobacco-sleeve -> crate-digger no crash;
+  /u/nadia after-hours adopts full 9-var palette + restores on nav.
+- Picker rebuilt (5-dot swatch tiles, cols-3, selection = var(--role-
+  interactive)); trigger contract preserved both renderings. Frames/focus/
+  selection/ambient follow palettes; tier metallics + OG/placeholder stay
+  fixed constants (satori can't read vars).
+- Dark rank-chip contrast nit flagged by builder -> ROADMAP (pre-existing).
+
+**Verification:** two live DOM rounds (role vars + computed bg flips across 4
+palettes, dark flip, lock refusal, legacy resolve, adoption restore); contrast
+matrices in log above; Foreman audits rounds 1+2 + AdoptTheme/VinylTheme reread.
+**Gates:** eslint/build clean; verify-dod 27/28 (#27 parked). Scorecard
+8/8/8/9. SHIP. **OWNER ROLLOUT 7/7 COMPLETE** (covers, rows/links, People,
+tiers, options hub, palettes; publish flow + frames shipped waves 1-2 earlier).
+Palette showcase delivered to owner for veto — retunes are few-line hex edits.

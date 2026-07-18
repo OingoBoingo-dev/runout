@@ -1,16 +1,31 @@
 @import "tailwindcss";
 
-/* Pressing-Plant Primaries — paper ground, ink text, four flat print colors.
-   Color encodes meaning: yellow = rank, cobalt = interactive, red = emotion
-   (likes + Publish), green = confirmation. Max two primaries per component. */
+/* Functional color roles (cycle 11) — color still encodes meaning, but the
+   HUE per meaning now comes from the active palette (lib/themes.ts):
+   rank (was fixed yellow), interactive (was cobalt), emotion (likes +
+   Publish, was red), confirm (was green). These stock defaults are the
+   original pre-overhaul brand four, byte-identical — the "Stock Paper"
+   palette; applyScheme overrides them inline on <html>. Rank passes
+   contrast as a FILL (ink-on-#FFC72C ~= 11.7:1) — it is never body text. */
+:root {
+  --role-rank: #FFC72C;
+  --role-interactive: #2C4BDF;
+  --role-emotion: #E8442E;
+  --role-confirm: #1CA24D;
+}
+
+/* Pressing-Plant tokens — paper ground, ink text, four flat print colors.
+   The legacy primary names are PERMANENT ALIASES of the role vars, so every
+   bg-yellow/text-cobalt/border-red/... utility in src follows the palette.
+   Max two roles per component. */
 @theme {
   --color-paper: #FAF6EC;
   --color-ink: #16150F;
   --color-secondary: #6F6A5E;
-  --color-yellow: #FFC72C;
-  --color-cobalt: #2C4BDF;
-  --color-red: #E8442E;
-  --color-green: #1CA24D;
+  --color-yellow: var(--role-rank);
+  --color-cobalt: var(--role-interactive);
+  --color-red: var(--role-emotion);
+  --color-green: var(--role-confirm);
   --color-hairline: rgba(22, 21, 15, 0.08);
   --color-card: #FFFFFF;
 
@@ -133,13 +148,13 @@ body {
   display: none;
 }
 
-/* Ambient schemes (the four locked unlocks in lib/themes): a fixed wash of
+/* Ambient palettes (the four locked unlocks in lib/themes): a fixed wash of
    huge soft radial gradients drifting behind ALL content — lava-lamp energy,
    abstract washes, no defined blobs. The pseudo sits at z-index -1 in the
    root stacking context; body's paper background propagates to the canvas,
-   so the wash paints above the paper but below every element, and colors
-   derive from the active scheme's own neutrals. Opacity stays low so covers
-   and ink always lead. */
+   so the wash paints above the paper but below every element. Colors derive
+   from the active palette's own ROLE hues — each locked palette glows in its
+   own four colors. Opacity stays low so covers and ink always lead. */
 html.ambient body::before {
   content: "";
   position: fixed;
@@ -147,11 +162,11 @@ html.ambient body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(45% 40% at 22% 28%, var(--color-secondary) 0%, transparent 70%),
-    radial-gradient(38% 44% at 78% 18%, var(--color-ink) 0%, transparent 72%),
-    radial-gradient(52% 46% at 64% 82%, var(--color-secondary) 0%, transparent 70%),
-    radial-gradient(40% 36% at 12% 78%, var(--color-ink) 0%, transparent 74%);
-  opacity: 0.16;
+    radial-gradient(45% 40% at 22% 28%, var(--role-interactive) 0%, transparent 70%),
+    radial-gradient(38% 44% at 78% 18%, var(--role-emotion) 0%, transparent 72%),
+    radial-gradient(52% 46% at 64% 82%, var(--role-rank) 0%, transparent 70%),
+    radial-gradient(40% 36% at 12% 78%, var(--role-confirm) 0%, transparent 74%);
+  opacity: 0.14;
   animation: ambientdrift 52s ease-in-out infinite alternate;
   will-change: transform;
 }
