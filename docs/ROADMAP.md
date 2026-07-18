@@ -85,3 +85,10 @@ Mitigations in place: dedup by (title+artist), orphan-recording demotion, noise
 boost (published-list count) — the last SELF-CORRECTS as songs get added to lists.
 Real fix if songs matter sooner: a Discogs-backed song-popularity pass (have/want),
 or a curated canonical map. Deferred pending owner priority.
+
+## Noted (cycle 11): dark-palette rank-chip contrast
+
+On dark palettes, bg-yellow rank chips carry text-ink — which is LIGHT on darks
+(light-on-amber ~1.4-1.8:1). Pre-existing pattern (pre-overhaul After Hours was
+1.38:1), slightly improved by tuned dark ranks. Proper fix: a per-palette
+--role-rank-contrast var for text sitting ON rank fills. Small, cosmetic.
