@@ -392,3 +392,30 @@ directly (search 200 + 5 results; catalog 958→958 saturated for the fixed
 test term — grew organically 816→958 in 9 days). Structural test flaw, parked
 again; repair already on roadmap. Scorecard: usability 8 / ease 8 /
 intuitiveness 8 / aesthetics 8. SHIP.
+
+---
+
+## Cycle 8 (2026-07-18) — rows, artist links, People search (rollout wave 2)
+
+**Shipped @ 564b345 (owner spec: click-anywhere rows; artist names → artist
+page; search users like @luis):**
+- Stretched-link rows (overlay Link absolute inset-0 z-[1] + aria-label; inner
+  interactives z-10; redundant title/cover links demoted — one accessible name)
+  across: list entries, profile ratings, search album/song rows, OrdkoChart,
+  MiniChart, explore grid. Editor rows untouched.
+- NEW ArtistLink (null mbid → plain span, never a dead link) wired at 7 render
+  sites. Data plumbing: ChartRow.artist_mbid via code-only batched merge in
+  getChart (chart_view stays frozen); ordko-lists select + OrdkoRow threaded.
+- People in /search: getUsersByQuery (strips @, neutralizes PostgREST or()
+  metachars, escapes LIKE wildcards; rank exact>prefix>contains>display), DB-only
+  and independent of the MB queue (renders when MB busy). @-prefixed queries put
+  People FIRST; otherwise Albums→Artists→Songs→People.
+- Builder deviations (both correct, accepted): z-[1] on overlays (positioned
+  Cover would swallow clicks at z-auto); search rows converted to stretched-link
+  (nested <a> invalid).
+
+**Review (proportionate):** Foreman audit of the two risk points — or()
+injection surface properly sanitized; ArtistLink degradation correct. Builder
+live-verified all sites with class-anchored counts (incl. CJK names, @nadia
+ordering proof). Gates: eslint/build clean; verify-dod 27/28 (#27 parked,
+saturation — probed 958→958 last cycle). Scorecard 8/8/8/8. SHIP.
