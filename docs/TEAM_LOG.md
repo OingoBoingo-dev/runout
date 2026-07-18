@@ -445,3 +445,29 @@ bronze 3.5-3.9 / rest black):**
 
 **Gates:** eslint/build clean; verify-dod 27/28 (#27 parked, saturation).
 Scorecard 8/8/8/9 (the gold glint is genuinely lovely). SHIP.
+
+---
+
+## Cycle 10 (2026-07-18) — options hub (rollout wave 4)
+
+**Shipped @ 7f2cd91 (owner spec: options in profile; palette selector moved
+there; stars vs 1/10 toggle):**
+- Settings gains "Color palette" (VinylTheme trigger='button' — the record
+  stays in Nav as quick-access, Nav untouched/byte-identical) + "Rating
+  display" (Stars ★ / N/10 segmented control, cobalt selection).
+- FROZEN CONTRACT documented in VinylTheme: trigger?: 'record'|'button' —
+  the palette-overhaul cycle must preserve both renderings.
+- NEW lib/rating-display.ts: useSyncExternalStore over
+  localStorage['ordko-rating-display'] (schema-free) — SSR-constant snapshot
+  (no hydration mismatch), custom in-tab event + cross-tab storage event,
+  clear() handled, private-mode fallback. format.ts formatRatingAs;
+  RatingNumber outOf: undefined = follow preference (explicit value = forced,
+  for future OG use). Tiers key off raw value — mode-identical gold/silver.
+- Builder live-verified in tenths mode via browser pane: "9.0/10" rows +
+  tier-gold intact, event flip re-rendered without reload, zero console
+  errors. Cycle-9 wiring meant item/profile/HomeSections needed NO edits.
+
+**Foreman audit:** rating-display store (singleton wiring, SSR snapshot) and
+the VinylTheme diff (record branch byte-identical) — both clean.
+**Gates:** eslint/build clean; verify-dod 27/28 (#27 parked). Scorecard
+8/8/8/8. SHIP. Remaining: palette overhaul (final wave).
