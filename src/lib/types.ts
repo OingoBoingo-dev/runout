@@ -87,6 +87,11 @@ export interface ChartRow {
   kind: Kind;
   title: string;
   artist_name: string;
+  /**
+   * Artist MBID for /artist/{mbid} deep links. chart_view (frozen SQL) does
+   * NOT expose this — getChart() merges it from catalog_items in code.
+   */
+  artist_mbid: string | null;
   year: number | null;
   cover_url: string | null;
   tags: string[];

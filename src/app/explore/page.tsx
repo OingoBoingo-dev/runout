@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { getChart, getTrending } from '@/lib/data';
 import { formatPosition, formatScore, formatYear, plural } from '@/lib/format';
@@ -112,7 +113,15 @@ export default async function ExplorePage({
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {rows.map((r, i) => (
-              <Link key={r.mbid} href={`/item/${r.mbid}`} className="press group block min-w-0">
+              /* Stretched-link card: the overlay Link (z-[1], above the
+                 positioned cover/rank stack) navigates to the item; the artist
+                 name is its own /artist link at z-10. */
+              <div key={r.mbid} className="press group relative min-w-0">
+                <Link
+                  href={`/item/${r.mbid}`}
+                  aria-label={r.title}
+                  className="absolute inset-0 z-[1] rounded-card"
+                />
                 <span className="relative block">
                   {/* Grid sits below the wall — never above the fold; stay lazy
                       so the wall's five priority tiles own the connection slots. */}
@@ -126,13 +135,13 @@ export default async function ExplorePage({
                   {r.title}
                 </span>
                 <span className="block truncate font-mono text-[11px] text-secondary">
-                  {r.artist_name}
+                  <ArtistLink name={r.artist_name} mbid={r.artist_mbid} className="relative z-10" />
                   {formatYear(r.year) ? ` · ${formatYear(r.year)}` : ''}
                 </span>
                 <span className="block truncate font-mono text-[11px] text-secondary">
                   {formatScore(r.score)} · in {plural(r.list_count, 'list')}
                 </span>
-              </Link>
+              </div>
             ))}
           </div>
         )}

@@ -1,13 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { after } from 'next/server';
+import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { resolveAndPersist } from '@/lib/covers';
+import { getUsersByQuery } from '@/lib/data';
 import { formatYear } from '@/lib/format';
 import { asCoverCandidate, MBBusyError, searchArtists, searchMB } from '@/lib/mb';
-import type { ArtistResult } from '@/lib/types';
+import type { ArtistResult, Profile } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'Search' };
+
+/** Same monogram treatment as Nav's avatar chip. */
+const monogram = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase() || '?';
 
 export default async function SearchPage({
   searchParams,
@@ -28,6 +40,10 @@ export default async function SearchPage({
       </div>
     );
   }
+
+  // People come from OUR database, not MusicBrainz — resolved before (and
+  // independent of) the MB queue so the section renders even when MB is busy.
+  const people: Profile[] = await getUsersByQuery(q);
 
   let artists: ArtistResult[] = [];
   let albums: Awaited<ReturnType<typeof searchMB>> = [];
@@ -53,6 +69,7 @@ export default async function SearchPage({
     mbid,
     title,
     artist,
+    artistMbid,
     year,
     cover,
     kind,
@@ -60,23 +77,74 @@ export default async function SearchPage({
     mbid: string;
     title: string;
     artist: string;
+    artistMbid: string | null;
     year: number | null;
     cover: string | null;
     kind: string;
   }) => (
-    <Link href={`/item/${mbid}`} className="group flex items-center gap-3 px-4 py-3">
+    /* Stretched-link row: overlay Link (z-[1], above the positioned Cover)
+       navigates to the item; the artist name deep-links at z-10. */
+    <div className="group relative flex items-center gap-3 px-4 py-3">
+      <Link href={`/item/${mbid}`} aria-label={title} className="absolute inset-0 z-[1]" />
       <Cover src={cover} title={title} artist={artist} className="w-12 flex-none" />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold group-hover:text-cobalt">{title}</span>
         <span className="block truncate font-mono text-xs tabular-nums text-secondary">
-          {artist}
+          <ArtistLink name={artist} mbid={artistMbid} className="relative z-10" />
           {formatYear(year) ? ` · ${formatYear(year)}` : ''}
         </span>
       </span>
       <span className="flex-none rounded-chip border border-hairline px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-secondary">
         {kind}
       </span>
-    </Link>
+    </div>
+  );
+
+  // "@luis" is person intent — People leads; otherwise it trails the catalog.
+  const peopleFirst = q.startsWith('@');
+
+  const peopleSection = (
+    <section className="mt-8">
+      <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">People</p>
+      {people.length ? (
+        <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
+          {people.map(p => (
+            <Link
+              key={p.id}
+              href={`/u/${p.username}`}
+              className="group flex items-center gap-3 px-4 py-3"
+            >
+              {p.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.avatar_url}
+                  alt=""
+                  loading="lazy"
+                  className="h-12 w-12 flex-none rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden
+                  className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-ink font-mono text-sm font-semibold text-paper"
+                >
+                  {monogram(p.display_name || p.username)}
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold group-hover:text-cobalt">
+                  {p.display_name || p.username}
+                </span>
+                <span className="block truncate font-mono text-xs text-secondary">
+                  @{p.username}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="font-mono text-sm text-secondary">No people matched “{q}”.</p>
+      )}
+    </section>
   );
 
   return (
@@ -88,14 +156,16 @@ export default async function SearchPage({
 
       {problem && <p className="mt-4 font-mono text-sm text-red">{problem}</p>}
 
-      {/* Albums lead — for an album-title query the record itself must come first,
-          not artists (e.g. tribute bands) that named themselves after it. */}
+      {peopleFirst && peopleSection}
+
+      {/* Albums lead the catalog — for an album-title query the record itself
+          must come first, not artists (e.g. tribute bands) named after it. */}
       <section className="mt-8">
         <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">Albums</p>
         {albums.length ? (
           <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
             {albums.map(a => (
-              <Row key={a.mbid} mbid={a.mbid} title={a.title} artist={a.artist_name} year={a.year} cover={a.cover_url} kind="album" />
+              <Row key={a.mbid} mbid={a.mbid} title={a.title} artist={a.artist_name} artistMbid={a.artist_mbid} year={a.year} cover={a.cover_url} kind="album" />
             ))}
           </div>
         ) : (
@@ -142,13 +212,15 @@ export default async function SearchPage({
         {songs.length ? (
           <div className="divide-y divide-hairline rounded-card border border-hairline bg-card py-1 text-ink">
             {songs.map(s => (
-              <Row key={s.mbid} mbid={s.mbid} title={s.title} artist={s.artist_name} year={s.year} cover={s.cover_url} kind="song" />
+              <Row key={s.mbid} mbid={s.mbid} title={s.title} artist={s.artist_name} artistMbid={s.artist_mbid} year={s.year} cover={s.cover_url} kind="song" />
             ))}
           </div>
         ) : (
           !problem && <p className="font-mono text-sm text-secondary">No songs matched “{q}”.</p>
         )}
       </section>
+
+      {!peopleFirst && peopleSection}
     </div>
   );
 }

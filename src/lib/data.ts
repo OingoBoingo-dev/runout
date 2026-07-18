@@ -12,7 +12,21 @@ export async function getChart(kind: Kind, tag?: string): Promise<ChartRow[]> {
     .order('list_count', { ascending: false })
     .order('title', { ascending: true })
     .limit(50);
-  return (data ?? []) as ChartRow[];
+  const rows = (data ?? []) as ChartRow[];
+  // chart_view (frozen SQL view) doesn't expose artist_mbid — merge it from
+  // catalog_items with one batched code-only query so rows can deep-link
+  // artists. Degrades to null (plain-text artist) if the lookup fails.
+  if (rows.length) {
+    const { data: cat } = await supabase
+      .from('catalog_items')
+      .select('mbid, artist_mbid')
+      .in('mbid', rows.map(r => r.mbid));
+    const artistByMbid = new Map(
+      ((cat ?? []) as { mbid: string; artist_mbid: string | null }[]).map(c => [c.mbid, c.artist_mbid]),
+    );
+    for (const r of rows) r.artist_mbid = artistByMbid.get(r.mbid) ?? null;
+  }
+  return rows;
 }
 
 export interface TrendingList {
@@ -176,4 +190,39 @@ export async function getProfileByUsername(username: string): Promise<Profile | 
   const supabase = await supabaseServer();
   const { data } = await supabase.from('profiles').select('*').eq('username', username).maybeSingle();
   return data as Profile | null;
+}
+
+/**
+ * People search for the main search bar. Pure DB read (NEVER MusicBrainz — do
+ * not route through the MB queue): profiles whose username OR display name
+ * contains the query, with any leading '@' stripped first ("@luis" is person
+ * intent). Ranked exact-username > username-prefix > username-contains >
+ * display-name-contains, then username asc for stability.
+ */
+export async function getUsersByQuery(q: string, limit = 6): Promise<Profile[]> {
+  const term = q.trim().replace(/^@+/, '').trim().toLowerCase();
+  if (!term) return [];
+  // Neutralize PostgREST or() grammar chars and escape LIKE wildcards so raw
+  // input can't break the filter expression or wildcard-match everything.
+  const safe = term
+    .replace(/[,()"]/g, ' ')
+    .replace(/[\\%_]/g, m => `\\${m}`)
+    .trim();
+  if (!safe) return [];
+  const supabase = await supabaseServer();
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`)
+    .limit(40);
+  const rank = (p: Profile) => {
+    const u = p.username.toLowerCase();
+    if (u === term) return 0;
+    if (u.startsWith(term)) return 1;
+    if (u.includes(term)) return 2;
+    return (p.display_name ?? '').toLowerCase().includes(term) ? 3 : 4;
+  };
+  return ((data ?? []) as Profile[])
+    .sort((a, b) => rank(a) - rank(b) || a.username.localeCompare(b.username))
+    .slice(0, limit);
 }

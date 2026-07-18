@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { PinButton } from '@/components/PinButton';
 import { Rank } from '@/components/Rank';
@@ -116,7 +117,9 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
             {yr ? ` · ${yr}` : ''}
           </p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl break-words">{item.title}</h1>
-          <p className="mt-1 text-lg font-semibold">{item.artist_name}</p>
+          <p className="mt-1 text-lg font-semibold">
+            <ArtistLink name={item.artist_name} mbid={item.artist_mbid} />
+          </p>
           {item.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {item.tags.map(t => (
