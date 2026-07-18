@@ -1,25 +1,27 @@
 'use client';
 
 /* eslint-disable react-hooks/set-state-in-effect --
-   the persisted scheme must hydrate after mount (localStorage is client-only)
+   the persisted palette must hydrate after mount (localStorage is client-only)
    and unlock data loads lazily when the sheet opens. */
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getThemeAccess, saveThemeScheme } from '@/app/actions/profile';
 import { fmtInt } from '@/lib/format';
-import { applyScheme, getScheme, SCHEMES, type Scheme } from '@/lib/themes';
+import { applyScheme, getScheme, SCHEMES, type Palette } from '@/lib/themes';
 
 /**
- * Vinyl theme picker (aesthetic-synthesis, adapted to Pressing-Plant rules):
- * a spinning record in the top bar opens a glass sheet with 12 curated
- * schemes. A scheme re-tints the NEUTRAL system — paper ground, card
- * surface, ink, secondary, hairlines, and therefore the glass chrome —
- * while the four primaries keep their semantic jobs (yellow rank / cobalt
- * interactive / red emotion / green confirmation). Persists locally always;
+ * Vinyl palette picker (cycle 11 overhaul): a spinning record in the top bar
+ * opens a glass sheet with 12 curated palettes. A palette re-colors the WHOLE
+ * page — the 5 neutrals (paper, card, ink, secondary, hairline — and
+ * therefore the glass chrome) plus the 4 functional role hues (rank /
+ * interactive / emotion / confirm) that the legacy yellow/cobalt/red/green
+ * tokens alias. Each tile previews as its paper ground carrying the four
+ * role dots, so distinctness reads at a glance. Persists locally always;
  * syncs to profiles.theme_scheme when signed in (tolerating the pending
- * migration). The last four schemes are ambient washes that unlock at
- * 25/50/75/100 contributions.
+ * migration). Retired scheme ids resolve through LEGACY_MAP inside
+ * getScheme. The last four palettes are ambient role-hue washes that unlock
+ * at 25/50/75/100 contributions.
  *
  * FROZEN CONTRACT (cycle 10 — the palette-overhaul cycle MUST preserve this
  * prop shape): `trigger?: 'record' | 'button'`.
@@ -45,18 +47,21 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
   const [access, setAccess] = useState<Access | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  // Hydrate the persisted scheme (localStorage is client-only).
+  // Hydrate the persisted palette (localStorage is client-only). A stored
+  // legacy id resolves through LEGACY_MAP; normalize storage to the new id.
   useEffect(() => {
     try {
-      const s = getScheme(localStorage.getItem(STORAGE_KEY));
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const s = getScheme(stored);
       if (s) {
         setSchemeId(s.id);
         applyScheme(s);
+        if (stored !== s.id) localStorage.setItem(STORAGE_KEY, s.id);
       }
     } catch {}
   }, []);
 
-  // Lazily fetch unlock progress + account scheme when the sheet first opens.
+  // Lazily fetch unlock progress + account palette when the sheet first opens.
   useEffect(() => {
     if (!open || access) return;
     let alive = true;
@@ -64,8 +69,8 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
       .then(a => {
         if (!alive) return;
         setAccess(a);
-        // Cross-device: adopt the account scheme only if this device hasn't
-        // picked one of its own.
+        // Cross-device: adopt the account palette only if this device hasn't
+        // picked one of its own. (The stored value may be a legacy id.)
         try {
           if (a.savedScheme && !localStorage.getItem(STORAGE_KEY)) {
             const s = getScheme(a.savedScheme);
@@ -103,14 +108,14 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
       .catch(() => {});
   };
 
-  const choose = (s: Scheme) => {
-    if (s.unlockAt && (access?.contributions ?? 0) < s.unlockAt) {
+  const choose = (p: Palette) => {
+    if (p.unlockAt && (access?.contributions ?? 0) < p.unlockAt) {
       setNote(
-        `“${s.name}” unlocks at ${fmtInt(s.unlockAt)} contributions (published lists + ratings + comments) — you're at ${fmtInt(access?.contributions ?? 0)}.`,
+        `“${p.name}” unlocks at ${fmtInt(p.unlockAt)} contributions (published lists + ratings + comments) — you're at ${fmtInt(access?.contributions ?? 0)}.`,
       );
       return;
     }
-    select(s.id);
+    select(p.id);
   };
 
   const current = getScheme(schemeId);
@@ -134,7 +139,7 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
           />
         </button>
       ) : (
-        /* Settings-aesthetic trigger: label left, live scheme name right.
+        /* Settings-aesthetic trigger: label left, live palette name right.
            SSR shows "Stock paper"; the hydrate effect above syncs the name. */
         <button
           type="button"
@@ -160,15 +165,15 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
             <div
               role="dialog"
               aria-label="Theme picker"
-              className="glass fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-1/2 z-[70] w-[min(94vw,420px)] -translate-x-1/2 rounded-sheet p-5"
+              className="glass fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-1/2 z-[70] w-[min(94vw,420px)] max-h-[calc(100dvh-72px)] -translate-x-1/2 overflow-y-auto rounded-sheet p-5"
             >
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <p className="font-display text-base">Scheme</p>
+                  <p className="font-display text-base">Palette</p>
                   <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-secondary">
                     {current
                       ? `${current.name} — ${current.vibe}`
-                      : 'Stock paper — pressing-plant primaries stay fixed'}
+                      : 'Stock Paper — the pressing-plant default'}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -189,62 +194,69 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {SCHEMES.map(s => {
-                  const locked = !!s.unlockAt && (access?.contributions ?? 0) < s.unlockAt;
-                  const selected = schemeId === s.id || (schemeId === null && s.id === 'stock');
+              <div className="grid grid-cols-3 gap-2">
+                {SCHEMES.map(p => {
+                  const locked = !!p.unlockAt && (access?.contributions ?? 0) < p.unlockAt;
+                  const selected = schemeId === p.id || (schemeId === null && p.id === 'stock');
+                  const dots = [p.roles.rank, p.roles.interactive, p.roles.emotion, p.roles.confirm];
                   return (
                     <button
-                      key={s.id}
+                      key={p.id}
                       type="button"
-                      onClick={() => choose(s)}
+                      onClick={() => choose(p)}
                       aria-pressed={selected}
                       title={
-                        locked ? `Unlocks at ${fmtInt(s.unlockAt ?? 0)} contributions` : s.vibe
+                        locked ? `Unlocks at ${fmtInt(p.unlockAt)} contributions` : p.vibe
                       }
                       aria-label={
                         locked
-                          ? `${s.name} — unlocks at ${fmtInt(s.unlockAt ?? 0)} contributions`
-                          : `${s.name} — ${s.vibe}`
+                          ? `${p.name} — unlocks at ${fmtInt(p.unlockAt)} contributions`
+                          : `${p.name} — ${p.vibe}`
                       }
                       className={`press relative rounded-chip border p-1.5 text-left ${
                         selected
-                          ? 'border-cobalt shadow-[0_0_0_1px_var(--color-cobalt)]'
+                          ? /* Selection chrome speaks the CURRENT palette's
+                               interactive hue — border-cobalt aliases
+                               var(--role-interactive) in globals.css. */
+                            'border-cobalt shadow-[0_0_0_1px_var(--color-cobalt)]'
                           : 'border-hairline hover:border-ink/40'
                       }`}
                     >
+                      {/* 5-color swatch: the palette's paper ground carrying a
+                          card pill with the four role dots (rank, interactive,
+                          emotion, confirm — always in that order). Ambient
+                          tiles hint their role-hue wash on the ground. */}
                       <span
                         aria-hidden
-                        className="block h-11 overflow-hidden rounded-[6px] border"
+                        className="flex h-11 items-center justify-center overflow-hidden rounded-[6px] border"
                         style={{
-                          borderColor: `${s.colors.ink}22`,
-                          background: s.ambient
-                            ? `radial-gradient(130% 100% at 18% 12%, ${s.colors.secondary}59 0%, transparent 62%), radial-gradient(110% 95% at 84% 82%, ${s.colors.secondary}33 0%, transparent 65%), ${s.colors.paper}`
-                            : s.colors.paper,
+                          borderColor: `${p.neutrals.ink}22`,
+                          background: p.ambient
+                            ? `radial-gradient(120% 110% at 16% 10%, ${p.roles.interactive}30 0%, transparent 58%), radial-gradient(120% 110% at 86% 88%, ${p.roles.emotion}2A 0%, transparent 60%), ${p.neutrals.paper}`
+                            : p.neutrals.paper,
                         }}
                       >
                         <span
-                          className="m-1.5 flex h-4 items-center gap-1 rounded-[4px] px-1"
-                          style={{ background: s.colors.card }}
+                          className="flex items-center gap-[3px] rounded-full px-1.5 py-1"
+                          style={{ background: p.neutrals.card }}
                         >
-                          <span
-                            className="h-1 w-4 rounded-full"
-                            style={{ background: s.colors.ink }}
-                          />
-                          <span
-                            className="h-1 w-2.5 rounded-full"
-                            style={{ background: s.colors.secondary }}
-                          />
+                          {dots.map((hue, i) => (
+                            <span
+                              key={i}
+                              className="h-2 w-2 rounded-full"
+                              style={{ background: hue }}
+                            />
+                          ))}
                         </span>
                       </span>
                       <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-wide text-secondary">
-                        {s.name}
+                        {p.name}
                       </span>
                       {locked && (
                         <span
                           aria-hidden
                           className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full"
-                          style={{ background: s.colors.ink, color: s.colors.paper }}
+                          style={{ background: p.neutrals.ink, color: p.neutrals.paper }}
                         >
                           <svg width="7" height="8" viewBox="0 0 8 9" fill="none" aria-hidden>
                             <rect x="0.75" y="3.75" width="6.5" height="4.5" rx="1" fill="currentColor" />
@@ -265,9 +277,10 @@ export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'butto
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-secondary">{note}</p>
               )}
               <p className="mt-4 font-mono text-[10px] leading-relaxed text-secondary">
-                Schemes tint the paper, surfaces and hairlines. Yellow, cobalt, red and green keep
-                their jobs — color means something here. The last four drift: slow ambient washes,
-                unlocked at {fmtInt(25)}/{fmtInt(50)}/{fmtInt(75)}/{fmtInt(100)} contributions.
+                A palette re-inks the whole pressing — paper, cards, ink and all four color roles:
+                rank, interactive, emotion, confirm. One hue per job, so color still means
+                something. The last four drift: slow ambient washes in their own hues, unlocked at{' '}
+                {fmtInt(25)}/{fmtInt(50)}/{fmtInt(75)}/{fmtInt(100)} contributions.
               </p>
             </div>
           </>,
