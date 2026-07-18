@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArtistLink } from '@/components/ArtistLink';
 import { CommentForm } from '@/components/CommentForm';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { Cover } from '@/components/Cover';
@@ -171,28 +172,32 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
           return (
             <div
               key={e.position}
-              className="flex items-center gap-3 px-4 py-3"
+              className="group relative flex items-center gap-3 px-4 py-3"
               style={{ '--i': Math.min(idx, 20) } as React.CSSProperties}
             >
+              {/* Stretched link: whole row navigates to the item page. z-[1]
+                  keeps it above the positioned Cover; the artist link sits at
+                  z-10 so it stays independently clickable. Title/cover are
+                  plain content — the overlay carries the accessible name. */}
+              <Link
+                href={`/item/${it.mbid}`}
+                aria-label={it.title}
+                className="absolute inset-0 z-[1]"
+              />
               <Rank pos={e.position} max={maxPos} sticker={e.position <= 3} />
-              <Link href={`/item/${it.mbid}`} className="press flex-none">
-                <Cover
-                  src={it.cover_url}
-                  title={it.title}
-                  artist={it.artist_name}
-                  className={`zine-sm ${e.position <= 10 ? 'w-20' : 'w-16'}`}
-                  priority={idx < 4}
-                />
-              </Link>
+              <Cover
+                src={it.cover_url}
+                title={it.title}
+                artist={it.artist_name}
+                className={`zine-sm flex-none ${e.position <= 10 ? 'w-20' : 'w-16'}`}
+                priority={idx < 4}
+              />
               <div className="min-w-0 flex-1">
-                <Link
-                  href={`/item/${it.mbid}`}
-                  className="block truncate font-semibold hover:text-cobalt"
-                >
+                <span className="block truncate font-semibold group-hover:text-cobalt">
                   {it.title}
-                </Link>
+                </span>
                 <p className="truncate font-mono text-xs tabular-nums text-secondary">
-                  {it.artist_name}
+                  <ArtistLink name={it.artist_name} mbid={it.artist_mbid} className="relative z-10" />
                   {fmtYear(it.year) ? ` · ${fmtYear(it.year)}` : ''}
                 </p>
                 {e.blurb && <p className="mt-1 break-words text-[13.5px] text-ink/80">{e.blurb}</p>}

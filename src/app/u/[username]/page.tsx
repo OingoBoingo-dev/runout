@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdoptTheme } from '@/components/AdoptTheme';
+import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { FollowButton } from '@/components/FollowButton';
 import { ProfileBanner } from '@/components/ProfileBanner';
@@ -297,15 +298,25 @@ export default async function ProfilePage({
                 const it = r.catalog_items;
                 if (!it) return null;
                 return (
-                  <Link key={r.item_mbid} href={`/item/${it.mbid}`} className="group flex items-center gap-3 px-4 py-3">
+                  /* Stretched-link row: overlay navigates to the item (z-[1],
+                     above the positioned Cover); artist link stays clickable
+                     at z-10. */
+                  <div key={r.item_mbid} className="group relative flex items-center gap-3 px-4 py-3">
+                    <Link
+                      href={`/item/${it.mbid}`}
+                      aria-label={it.title}
+                      className="absolute inset-0 z-[1]"
+                    />
                     <Cover src={it.cover_url} title={it.title} artist={it.artist_name} className="w-12 flex-none" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold group-hover:text-cobalt">{it.title}</span>
-                      <span className="block truncate font-mono text-xs text-secondary">{it.artist_name}</span>
+                      <span className="block truncate font-mono text-xs text-secondary">
+                        <ArtistLink name={it.artist_name} mbid={it.artist_mbid} className="relative z-10" />
+                      </span>
                     </span>
                     <Stars value={Number(r.value)} size={14} />
                     <span className="font-mono text-xs tabular-nums text-secondary">{fmtRating(Number(r.value))}</span>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

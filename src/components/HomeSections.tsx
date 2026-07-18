@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArtistLink } from '@/components/ArtistLink';
 import { Cover } from '@/components/Cover';
 import { Stars } from '@/components/Stars';
 import type { FeedEntry, TrendingList } from '@/lib/data';
@@ -52,41 +53,46 @@ export function SectionHead({
 /**
  * A compact ranked mini-chart (top ~6-8): yellow rank sticker · cover · title/
  * artist. Mirrors The Chart's item cards but as a tight vertical list so two can
- * sit side by side on desktop. Links each row to /item/{mbid}.
+ * sit side by side on desktop. Whole row navigates to /item/{mbid} via a
+ * stretched overlay Link (z-[1], above the positioned Cover); the artist name
+ * is its own /artist link at z-10.
  */
 export function MiniChart({ rows, eagerRows = 0 }: { rows: ChartRow[]; eagerRows?: number }) {
   const max = rows.length;
   return (
     <ol className="mt-4 space-y-2">
       {rows.map((r, i) => (
-        <li key={r.mbid}>
+        <li
+          key={r.mbid}
+          className="press group relative flex items-center gap-3 rounded-card border border-hairline bg-card p-2"
+        >
           <Link
             href={`/item/${r.mbid}`}
-            className="press group flex items-center gap-3 rounded-card border border-hairline bg-card p-2"
-          >
-            <span className="grid min-w-[40px] flex-none place-items-center">
-              <b className="rounded-chip bg-yellow px-2 py-1.5 font-display text-lg font-normal leading-none tabular-nums text-ink shadow-[0_1px_4px_rgba(22,21,15,0.25)]">
-                {formatPosition(i + 1, max)}
-              </b>
+            aria-label={r.title}
+            className="absolute inset-0 z-[1] rounded-card"
+          />
+          <span className="grid min-w-[40px] flex-none place-items-center">
+            <b className="rounded-chip bg-yellow px-2 py-1.5 font-display text-lg font-normal leading-none tabular-nums text-ink shadow-[0_1px_4px_rgba(22,21,15,0.25)]">
+              {formatPosition(i + 1, max)}
+            </b>
+          </span>
+          <Cover
+            src={r.cover_url}
+            title={r.title}
+            artist={r.artist_name}
+            rounded="rounded-chip"
+            className="w-12 flex-none"
+            priority={i < eagerRows}
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold group-hover:text-cobalt">
+              {r.title}
             </span>
-            <Cover
-              src={r.cover_url}
-              title={r.title}
-              artist={r.artist_name}
-              rounded="rounded-chip"
-              className="w-12 flex-none"
-              priority={i < eagerRows}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold group-hover:text-cobalt">
-                {r.title}
-              </span>
-              <span className="block truncate font-mono text-[11px] text-secondary">
-                {r.artist_name}
-                {formatYear(r.year) ? ` · ${formatYear(r.year)}` : ''}
-              </span>
+            <span className="block truncate font-mono text-[11px] text-secondary">
+              <ArtistLink name={r.artist_name} mbid={r.artist_mbid} className="relative z-10" />
+              {formatYear(r.year) ? ` · ${formatYear(r.year)}` : ''}
             </span>
-          </Link>
+          </span>
         </li>
       ))}
     </ol>
