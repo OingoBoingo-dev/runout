@@ -5,8 +5,9 @@ import { Cover } from '@/components/Cover';
 import { PinButton } from '@/components/PinButton';
 import { Rank } from '@/components/Rank';
 import { RateControl } from '@/components/RateControl';
+import { RatingNumber } from '@/components/RatingNumber';
 import { Stars } from '@/components/Stars';
-import { fmtCount, fmtRating, fmtYear, msToLen } from '@/lib/format';
+import { fmtCount, fmtYear, msToLen } from '@/lib/format';
 import { fetchItemDetail } from '@/lib/mb';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { CatalogItem, Track } from '@/lib/types';
@@ -141,7 +142,13 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
               </span>
               <Stars value={avg} size={16} />
               <span className="font-mono text-[13px] tabular-nums">
-                {ratings.length ? `${fmtRating(avg)} · ${fmtCount(ratings.length, 'rating')}` : '— · no ratings yet'}
+                {ratings.length ? (
+                  <>
+                    <RatingNumber value={avg} /> · {fmtCount(ratings.length, 'rating')}
+                  </>
+                ) : (
+                  '— · no ratings yet'
+                )}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -152,7 +159,7 @@ export default async function ItemPage({ params }: { params: Promise<{ mbid: str
                 <>
                   <RateControl itemMbid={mbid} initial={mine} />
                   <span className="font-mono text-[13px] tabular-nums">
-                    {mine ? fmtRating(mine) : 'tap a star — halves count'}
+                    {mine ? <RatingNumber value={mine} /> : 'tap a star — halves count'}
                   </span>
                 </>
               ) : (
