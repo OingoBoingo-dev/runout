@@ -14,7 +14,8 @@ export default async function SettingsPage() {
   if (!user) redirect('/login');
 
   const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  const profile = data as Profile | null;
+  // is_admin is absent until migration 0004 lands — undefined reads as false.
+  const profile = data as (Profile & { is_admin?: boolean }) | null;
   if (!profile) redirect('/login');
 
   return (
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
         bio={profile.bio}
         avatarUrl={profile.avatar_url}
         backgroundUrl={profile.background_url ?? null}
+        isAdmin={profile.is_admin === true}
       />
     </div>
   );
