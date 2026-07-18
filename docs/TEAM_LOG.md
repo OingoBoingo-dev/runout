@@ -419,3 +419,29 @@ injection surface properly sanitized; ArtistLink degradation correct. Builder
 live-verified all sites with class-anchored counts (incl. CJK names, @nadia
 ordering proof). Gates: eslint/build clean; verify-dod 27/28 (#27 parked,
 saturation — probed 958→958 last cycle). Scorecard 8/8/8/8. SHIP.
+
+---
+
+## Cycle 9 (2026-07-18) — metallic rating tiers (rollout wave 3)
+
+**Shipped @ 15db5cb (owner spec: gold dazzling 4.5-5 / flat silver 4-4.4 /
+bronze 3.5-3.9 / rest black):**
+- NEW lib/rating.ts (single tier truth: rounds like formatRating first so the
+  DISPLAYED number always matches its tier — a shown "4.5" can never be
+  silver; TIER_COLORS #C9971E/#8E959C/#A9722E + :root --tier-* mirrors).
+- NEW RatingNumber.tsx — THE numeric path (outOf='ten' stubbed for cycle 10's
+  stars-vs-tenths toggle). Stars.tsx metal overlay (width-clip intact);
+  RateControl display tiers once set, stays interactive-cobalt while rating.
+- Gold dazzle = brightness/saturation glint 2.6s linear infinite (background-
+  clip:text can't clip SVG star fills — one class serves digits AND stars);
+  explicit reduced-motion kill IN the built CSS (greppable, survives if the
+  blanket kill narrows). Sites: item avg (averages shimmer) + own row, profile
+  ratings tab, home feed rows.
+- Verification: computed-style rgb(201,151,30) + 2.6s animation running live;
+  thresholds exercised at edges (4.5/4.0/3.5/4.449/4.45); bronze proven by
+  function (zero seeded 3.5-3.9 values — service-role query); reduced-motion
+  guard grepped in served CSS. Foreman spot-audit: rounding call correct,
+  metals documented as outside the semantic primaries.
+
+**Gates:** eslint/build clean; verify-dod 27/28 (#27 parked, saturation).
+Scorecard 8/8/8/9 (the gold glint is genuinely lovely). SHIP.
