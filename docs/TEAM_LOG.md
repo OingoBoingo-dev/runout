@@ -512,3 +512,32 @@ matrices in log above; Foreman audits rounds 1+2 + AdoptTheme/VinylTheme reread.
 8/8/8/9. SHIP. **OWNER ROLLOUT 7/7 COMPLETE** (covers, rows/links, People,
 tiers, options hub, palettes; publish flow + frames shipped waves 1-2 earlier).
 Palette showcase delivered to owner for veto — retunes are few-line hex edits.
+
+---
+
+## Cycle 12 (2026-07-18) — minimal admin panel (community wave, part 1)
+
+**Shipped @ fed6e57 + b41e0ac (owner: "get rolling on an admin panel"):**
+- /admin gated by profiles.is_admin (=@harper via migration 0004). lib/admin.ts
+  requireAdmin/requireAdminService: fail-closed, service client module-private/
+  never-exported, notFound() on non-admin (404, not login-redirect — panel
+  invisible). Tabs: Overview counts / Lists (incl private+draft, delete) /
+  Comments (delete) / Users (is_admin badge) / Submissions (approve-reject,
+  dark until 0004). actions/admin.ts: uuid-zod'd, EACH re-gates, {error}
+  strings, review race-guard. Ships DARK (404) until owner pastes 0004.
+- Builder caught a brief error (likes are polymorphic, no FK) → orphan-likes
+  sweep on delete. Beyond-DoD: proved authenticated NON-admin gets 404.
+
+**SECURITY REVIEW (security-review skill) — 1 HIGH, FIXED before apply:**
+- Privilege escalation: is_admin added to profiles whose UPDATE RLS is
+  row-only (auth.uid()=id, no column guard) + public anon key ⇒ any user could
+  PATCH their own row is_admin=true and self-escalate to full admin. Found
+  independently by Foreman (read the 0001 policy) AND the finder (0.95). FIX
+  @ b41e0ac: BEFORE UPDATE trigger guard_profile_is_admin blocks non-service
+  is_admin writes (current_user not in service_role/postgres/supabase_admin);
+  non-SECURITY-DEFINER so current_user is the real PostgREST role. Sweep found
+  nothing else (submissions/artist_follows policies + actions clean).
+
+**MIGRATION 0004 PENDING owner paste** (now includes the guard trigger).
+**Gates:** eslint/build clean; /admin 404 dark-state re-confirmed; 0 service-key
+leaks in client chunks; verify-dod 27/28 (#27 parked). SHIP (inert until 0004).
