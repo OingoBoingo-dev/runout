@@ -5,6 +5,8 @@ import { useState, useTransition } from 'react';
 import { updateProfile } from '@/app/actions/profile';
 import { BorderPicker } from '@/components/BorderPicker';
 import { MediaUpload } from '@/components/MediaUpload';
+import { VinylTheme } from '@/components/VinylTheme';
+import { useRatingDisplay } from '@/lib/rating-display';
 
 export function SettingsForm({
   username,
@@ -47,6 +49,24 @@ export function SettingsForm({
           Profile frame
         </p>
         <BorderPicker />
+      </section>
+
+      <section className="rounded-card border border-hairline bg-card p-6 text-ink">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+          Color palette
+        </p>
+        {/* Same sheet as the nav's spinning record — only the trigger differs. */}
+        <VinylTheme trigger="button" />
+        <p className="mt-3 font-mono text-[10px] leading-relaxed text-secondary">
+          Schemes tint paper and surfaces. The four primaries never change.
+        </p>
+      </section>
+
+      <section className="rounded-card border border-hairline bg-card p-6 text-ink">
+        <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.2em] text-secondary">
+          Rating display
+        </p>
+        <RatingDisplayToggle />
       </section>
 
     <form
@@ -97,6 +117,47 @@ export function SettingsForm({
         </button>
       </div>
     </form>
+    </div>
+  );
+}
+
+/**
+ * Stars-vs-N/10 segmented control. Device-local (localStorage via
+ * useRatingDisplay) — no server action, no schema. Cobalt border + shadow
+ * ring marks the selection, mirroring BorderPicker's affordance; every
+ * mounted RatingNumber swaps its text the moment a segment is tapped.
+ */
+function RatingDisplayToggle() {
+  const [display, setDisplay] = useRatingDisplay();
+  const segments = [
+    ['stars', 'Stars ★'],
+    ['tenths', 'N/10'],
+  ] as const;
+  return (
+    <div>
+      <div role="group" aria-label="Rating display" className="grid grid-cols-2 gap-2">
+        {segments.map(([v, label]) => {
+          const selected = display === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setDisplay(v)}
+              aria-pressed={selected}
+              className={`press min-h-[44px] rounded-chip border px-4 py-3 text-center font-mono text-[11px] uppercase tracking-[0.13em] ${
+                selected
+                  ? 'border-cobalt text-ink shadow-[0_0_0_1px_var(--color-cobalt)]'
+                  : 'border-hairline text-secondary hover:border-ink/40'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-3 font-mono text-[10px] leading-relaxed text-secondary">
+        Shows every rating as 0–5 stars or as N/10, on this device. You still rate by tapping stars.
+      </p>
     </div>
   );
 }

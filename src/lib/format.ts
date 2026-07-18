@@ -14,6 +14,14 @@ export const formatScore = (n: number | null | undefined): string =>
 export const formatRating = (v: number | null | undefined): string =>
   v ? (Math.round(v * 10) / 10).toFixed(1) : '—';
 
+/**
+ * Mode-aware rating text — ALL numeric rating copy flows through here:
+ * 'stars' = formatRating's 0–5 one decimal; 'tenths' = (value × 2) rounded
+ * once to one decimal + "/10" (4.6 → "9.2/10"). Em dash for unrated in both.
+ */
+export const formatRatingAs = (v: number | null | undefined, mode: 'stars' | 'tenths'): string =>
+  mode === 'tenths' && v ? (Math.round(v * 20) / 10).toFixed(1) + '/10' : formatRating(v);
+
 /** `1 list`, `2 lists`, `1 like` — with an irregular-plural escape hatch. */
 export const plural = (n: number, noun: string, pluralNoun?: string): string =>
   `${formatScore(n)} ${n === 1 ? noun : pluralNoun ?? noun + 's'}`;

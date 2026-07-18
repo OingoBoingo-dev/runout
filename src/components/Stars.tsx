@@ -11,7 +11,16 @@ function Star({ size }: { size: number }) {
   );
 }
 
-/** Read-only star row with half-star precision via width clipping. */
+/**
+ * Read-only star row with half-star precision via width clipping.
+ *
+ * Rating-display preference (cycle 10) — deliberately NOT wired here: in
+ * 'tenths' mode the glyphs render exactly as today, because the star row is
+ * the visual for a 0–5 value in both modes; the ADJACENT RatingNumber is
+ * what swaps its text to N/10. That keeps Stars server-renderable (no hook,
+ * no 'use client', no extra client JS), and the aria-label stays
+ * "out of 5 stars" because that is what the glyphs depict.
+ */
 export function Stars({ value, size = 15, tier = true }: { value: number; size?: number; tier?: boolean }) {
   const pct = Math.max(0, Math.min(100, (value / 5) * 100));
   const label = value ? `${Math.round(value * 10) / 10} out of 5 stars` : 'Not yet rated';

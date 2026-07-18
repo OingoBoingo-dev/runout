@@ -20,6 +20,15 @@ import { applyScheme, getScheme, SCHEMES, type Scheme } from '@/lib/themes';
  * syncs to profiles.theme_scheme when signed in (tolerating the pending
  * migration). The last four schemes are ambient washes that unlock at
  * 25/50/75/100 contributions.
+ *
+ * FROZEN CONTRACT (cycle 10 — the palette-overhaul cycle MUST preserve this
+ * prop shape): `trigger?: 'record' | 'button'`.
+ *   - 'record' (default): the spinning-disc nav trigger, byte-for-byte
+ *     today's rendering — both Nav.tsx mounts pass nothing and change zero.
+ *   - 'button': a full-width labeled Settings control ("Scheme" / current
+ *     scheme name) used by SettingsForm's Color palette section.
+ * Both triggers open the SAME sheet. Rebuild the picker internals freely;
+ * keep both trigger renderings and this prop shape working.
  */
 
 const STORAGE_KEY = 'ordko-scheme';
@@ -30,7 +39,7 @@ interface Access {
   savedScheme: string | null;
 }
 
-export function VinylTheme() {
+export function VinylTheme({ trigger = 'record' }: { trigger?: 'record' | 'button' }) {
   const [open, setOpen] = useState(false);
   const [schemeId, setSchemeId] = useState<string | null>(null);
   const [access, setAccess] = useState<Access | null>(null);
@@ -108,21 +117,35 @@ export function VinylTheme() {
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Theme — pick a scheme"
-        onClick={() => setOpen(true)}
-        className="press relative h-7 w-7 flex-none rounded-full motion-safe:animate-[vinylspin_5s_linear_infinite]"
-        style={{
-          background:
-            'repeating-radial-gradient(circle at center, rgba(22,21,15,.12) 0 1px, transparent 1px 3.5px), conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)',
-        }}
-      >
-        <span
-          aria-hidden
-          className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper shadow-[0_0_0_2px_var(--color-ink)]"
-        />
-      </button>
+      {trigger === 'record' ? (
+        <button
+          type="button"
+          aria-label="Theme — pick a scheme"
+          onClick={() => setOpen(true)}
+          className="press relative h-7 w-7 flex-none rounded-full motion-safe:animate-[vinylspin_5s_linear_infinite]"
+          style={{
+            background:
+              'repeating-radial-gradient(circle at center, rgba(22,21,15,.12) 0 1px, transparent 1px 3.5px), conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)',
+          }}
+        >
+          <span
+            aria-hidden
+            className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper shadow-[0_0_0_2px_var(--color-ink)]"
+          />
+        </button>
+      ) : (
+        /* Settings-aesthetic trigger: label left, live scheme name right.
+           SSR shows "Stock paper"; the hydrate effect above syncs the name. */
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={() => setOpen(true)}
+          className="press w-full rounded-chip border border-hairline px-4 py-3 font-mono text-[11px] uppercase tracking-[0.13em] text-secondary hover:border-ink flex items-center justify-between"
+        >
+          <span>Scheme</span>
+          <span>{current ? current.name : 'Stock paper'}</span>
+        </button>
+      )}
 
       {/* Portal to <body>: the glass nav's backdrop-filter creates a containing
           block that would otherwise trap this fixed sheet inside the 56px bar. */}
