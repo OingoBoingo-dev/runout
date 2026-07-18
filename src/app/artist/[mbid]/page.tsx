@@ -83,6 +83,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ mbid: s
                     artist={rg.artist_name}
                     className="w-full rounded-card"
                     rounded="rounded-card"
+                    size={500}
                   />
                   <p className="mt-2 truncate font-semibold text-sm group-hover:text-cobalt">
                     {rg.title}

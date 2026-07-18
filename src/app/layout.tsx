@@ -1,8 +1,22 @@
 import type { Metadata, Viewport } from 'next';
 import { Archivo_Black, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { preconnect, prefetchDNS } from 'react-dom';
 import { Nav } from '@/components/Nav';
 import { VUScroll } from '@/components/VUScroll';
 import './globals.css';
+
+/**
+ * Cover art hosts — warm DNS+TLS before the first cover request so a cold
+ * page doesn't pay connection setup on the critical path. archive.org is the
+ * CAA 307-redirect target. No crossOrigin: covers load as no-cors <img>
+ * requests, and a CORS-mode preconnect would open a connection the browser
+ * can't reuse for them.
+ */
+const COVER_HOSTS = [
+  'https://coverartarchive.org',
+  'https://archive.org',
+  'https://is1-ssl.mzstatic.com',
+];
 
 const archivo = Archivo_Black({
   weight: '400',
@@ -38,6 +52,10 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  for (const host of COVER_HOSTS) {
+    preconnect(host);
+    prefetchDNS(host); // dns-prefetch fallback for browsers that skip preconnect
+  }
   return (
     <html
       lang="en"

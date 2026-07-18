@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- satori/ImageResponse renders raw <img>; next/image does not apply here */
 import { ImageResponse } from 'next/og';
+import { coverThumb } from '@/lib/cover-url';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { CatalogItem, List, Profile } from '@/lib/types';
 
@@ -13,13 +14,8 @@ const CACHE_HEADERS = {
   'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
 };
 
-/**
- * Cover Art Archive serves -250/-500/-1200 thumbnails; request the small one for
- * the ~214px OG tiles to cut download time. Non-CAA URLs (iTunes) are left alone.
- */
-function thumb(url: string): string {
-  return url.replace(/(coverartarchive\.org\/\S*\/(?:front|back))(?:-\d+)?$/i, '$1-250');
-}
+/** ~214px OG tiles want the small thumbnail variant — shared rewriter. */
+const thumb = (url: string) => coverThumb(url, 250);
 
 // Pressing-plant palette (OG images don't get Tailwind — inline only).
 const PAPER = '#FAF6EC';

@@ -9,11 +9,11 @@ import type { OrdkoRow } from '@/lib/ordko-lists';
  * Mobile-first (375px): a single column of rank · cover · title/artist/year ·
  * mono score caption. Yellow hype-sticker rank numeral to match The Chart.
  */
-export function OrdkoChart({ rows }: { rows: OrdkoRow[] }) {
+export function OrdkoChart({ rows, eagerRows = 0 }: { rows: OrdkoRow[]; eagerRows?: number }) {
   const max = rows.length ? rows[rows.length - 1].rank : 0;
   return (
     <ol className="mt-6 space-y-2">
-      {rows.map(r => (
+      {rows.map((r, i) => (
         <li key={r.mbid}>
           <Link
             href={`/item/${r.mbid}`}
@@ -32,6 +32,7 @@ export function OrdkoChart({ rows }: { rows: OrdkoRow[] }) {
               artist={r.artist_name}
               rounded="rounded-chip"
               className="w-14 flex-none"
+              priority={i < eagerRows}
             />
 
             <span className="min-w-0 flex-1">

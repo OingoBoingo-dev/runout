@@ -101,7 +101,7 @@ export default async function HomePage() {
                     See the full chart &rarr;
                   </Link>
                 </div>
-                <MiniChart rows={topAlbums} />
+                <MiniChart rows={topAlbums} eagerRows={3} />
               </div>
             )}
             {topSongs.length > 0 && (
@@ -115,7 +115,7 @@ export default async function HomePage() {
                     See the full chart &rarr;
                   </Link>
                 </div>
-                <MiniChart rows={topSongs} />
+                <MiniChart rows={topSongs} eagerRows={3} />
               </div>
             )}
           </div>
