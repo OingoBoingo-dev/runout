@@ -50,7 +50,7 @@ export default async function ExplorePage({
         <div className="-mt-[calc(56px+env(safe-area-inset-top))] grid grid-cols-5">
           {wall.map(r => (
             <Link key={r.mbid} href={`/item/${r.mbid}`} aria-label={r.title} className="block">
-              <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-none" className="w-full" />
+              <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-none" className="w-full" size={500} priority />
             </Link>
           ))}
         </div>
@@ -111,7 +111,7 @@ export default async function ExplorePage({
             {rows.map((r, i) => (
               <Link key={r.mbid} href={`/item/${r.mbid}`} className="press group block min-w-0">
                 <span className="relative block">
-                  <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-card" className="zine w-full" />
+                  <Cover src={r.cover_url} title={r.title} artist={r.artist_name} rounded="rounded-card" className="zine w-full" size={500} priority={i < 5} />
                   {/* Yellow hype-sticker rank chip: ink Archivo numeral, whisper of shadow. */}
                   <span className="absolute left-2 top-2 rounded-full bg-yellow px-2.5 py-1.5 font-display text-[15px] leading-none text-ink shadow-[0_1px_4px_rgba(22,21,15,0.25)] tabular-nums">
                     {formatPosition(i + 1, Math.min(rows.length, 50))}

@@ -181,6 +181,7 @@ export default async function ListPage({ params }: { params: Promise<{ id: strin
                   title={it.title}
                   artist={it.artist_name}
                   className={`zine-sm ${e.position <= 10 ? 'w-20' : 'w-16'}`}
+                  priority={idx < 4}
                 />
               </Link>
               <div className="min-w-0 flex-1">

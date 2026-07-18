@@ -231,7 +231,7 @@ export default async function ProfilePage({
           <div className="grid max-w-xl grid-cols-4 gap-2">
             {pins.map(p => (
               <Link key={p.mbid} href={`/item/${p.mbid}`} aria-label={p.title}>
-                <Cover src={p.cover_url} title={p.title} artist={p.artist_name} className="w-full rounded-card" />
+                <Cover src={p.cover_url} title={p.title} artist={p.artist_name} className="w-full rounded-card" size={500} />
               </Link>
             ))}
           </div>

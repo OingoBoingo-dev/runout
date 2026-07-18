@@ -165,7 +165,7 @@ export default async function OrdkoPage({
           </Link>
         </div>
       ) : (
-        <OrdkoChart rows={chart.rows} />
+        <OrdkoChart rows={chart.rows} eagerRows={4} />
       )}
     </div>
   );

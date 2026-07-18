@@ -54,7 +54,7 @@ export function SectionHead({
  * artist. Mirrors The Chart's item cards but as a tight vertical list so two can
  * sit side by side on desktop. Links each row to /item/{mbid}.
  */
-export function MiniChart({ rows }: { rows: ChartRow[] }) {
+export function MiniChart({ rows, eagerRows = 0 }: { rows: ChartRow[]; eagerRows?: number }) {
   const max = rows.length;
   return (
     <ol className="mt-4 space-y-2">
@@ -75,6 +75,7 @@ export function MiniChart({ rows }: { rows: ChartRow[] }) {
               artist={r.artist_name}
               rounded="rounded-chip"
               className="w-12 flex-none"
+              priority={i < eagerRows}
             />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold group-hover:text-cobalt">
